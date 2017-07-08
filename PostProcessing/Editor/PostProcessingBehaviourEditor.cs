@@ -8,10 +8,12 @@ namespace UnityEditor.PostProcessing
     public class PostProcessingBehaviourEditor : Editor
     {
         SerializedProperty m_Profile;
+        SerializedProperty m_Antialiasing;
 
         public void OnEnable()
         {
             m_Profile = FindSetting((PostProcessingBehaviour x) => x.profile);
+            m_Antialiasing = FindSetting((PostProcessingBehaviour x) => x.antialiasing);
         }
 
         public override void OnInspectorGUI()
@@ -19,6 +21,7 @@ namespace UnityEditor.PostProcessing
             serializedObject.Update();
 
             EditorGUILayout.PropertyField(m_Profile);
+            EditorGUILayout.PropertyField(m_Antialiasing, true);
 
             serializedObject.ApplyModifiedProperties();
         }

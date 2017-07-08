@@ -15,6 +15,7 @@ namespace UnityEngine.PostProcessing
     {
         // Inspector fields
         public PostProcessingProfile profile;
+        public AntialiasingModel antialiasing;
 
         public Func<Vector2, Matrix4x4> jitteredMatrixFunc;
 
@@ -120,7 +121,7 @@ namespace UnityEngine.PostProcessing
             m_ScreenSpaceReflection.Init(context, profile.screenSpaceReflection);
             m_FogComponent.Init(context, profile.fog);
             m_MotionBlur.Init(context, profile.motionBlur);
-            m_Taa.Init(context, profile.antialiasing);
+            m_Taa.Init(context, antialiasing);
             m_EyeAdaptation.Init(context, profile.eyeAdaptation);
             m_DepthOfField.Init(context, profile.depthOfField);
             m_Bloom.Init(context, profile.bloom);
@@ -130,7 +131,7 @@ namespace UnityEngine.PostProcessing
             m_Grain.Init(context, profile.grain);
             m_Vignette.Init(context, profile.vignette);
             m_Dithering.Init(context, profile.dithering);
-            m_Fxaa.Init(context, profile.antialiasing);
+            m_Fxaa.Init(context, antialiasing);
 
             // Handles profile change and 'enable' state observers
             if (m_PreviousProfile != profile)
