@@ -52,6 +52,9 @@ Shader "Hidden/Post FX/Fog"
             VaryingsFog o;
             o.vertex = v.vertex;
             o.uv = UnityStereoScreenSpaceUVAdjust(v.texcoord, _MainTex_ST);
+#if UNITY_UV_STARTS_AT_TOP
+            o.uv.y = 1 - o.uv.y;
+#endif
             return o;
         }
 
@@ -60,6 +63,9 @@ Shader "Hidden/Post FX/Fog"
             VaryingsFogFade o;
             o.vertex = v.vertex;
             o.uv = UnityStereoScreenSpaceUVAdjust(v.texcoord, _MainTex_ST);
+#if UNITY_UV_STARTS_AT_TOP
+            o.uv.y = 1 - o.uv.y;
+#endif
             float _SkyRotation = _SkyExposure_Rotation.y;
             o.ray = RotateAroundYAxis(v.texcoord1.xyz, _SkyRotation);
             return o;

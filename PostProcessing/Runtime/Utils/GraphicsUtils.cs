@@ -45,20 +45,18 @@ namespace UnityEngine.PostProcessing
                 var vertices = new[]
                 {
                     new Vector3(-1f, -1f, 0f),
-                    new Vector3( 1f,  1f, 0f),
-                    new Vector3( 1f, -1f, 0f),
-                    new Vector3(-1f,  1f, 0f)
+                    new Vector3( 3f, -1f, 0f),
+                    new Vector3(-1f,  3f, 0f)
                 };
 
                 var uvs = new[]
                 {
                     new Vector2(0f, 0f),
-                    new Vector2(1f, 1f),
-                    new Vector2(1f, 0f),
-                    new Vector2(0f, 1f)
+                    new Vector2(2f, 0f),
+                    new Vector2(0f, 2f)
                 };
 
-                var indices = new[] { 0, 1, 2, 1, 0, 3 };
+                var indices = new[] { 0, 1, 2 };
 
                 s_Quad = new Mesh
                 {
