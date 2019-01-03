@@ -2,11 +2,11 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Rendering.PostProcessing
 {
-#if UNITY_2017_2_OR_NEWER
-    using XRSettings = UnityEngine.XR.XRSettings;
-#elif UNITY_5_6_OR_NEWER
-    using XRSettings = UnityEngine.VR.VRSettings;
-#endif
+//#if UNITY_2017_2_OR_NEWER
+//    using XRSettings = UnityEngine.XR.XRSettings;
+//#elif UNITY_5_6_OR_NEWER
+//    using XRSettings = UnityEngine.VR.VRSettings;
+//#endif
 
     /// <summary>
     /// A context object passed around all post-processing effects in a frame.
@@ -29,6 +29,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 m_Camera = value;
 
 #if !UNITY_SWITCH && ENABLE_VR
+#if false
                 if (m_Camera.stereoEnabled)
                 {
 #if UNITY_2017_2_OR_NEWER
@@ -84,6 +85,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
                 }
                 else
+#endif
 #endif
                 {
                     width = m_Camera.pixelWidth;

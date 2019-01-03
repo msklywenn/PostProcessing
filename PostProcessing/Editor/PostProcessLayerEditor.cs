@@ -18,8 +18,8 @@ namespace UnityEditor.Rendering.PostProcessing
 #pragma warning disable 414
         SerializedProperty m_DirectToCameraTarget;
 #pragma warning restore 414
-        SerializedProperty m_VolumeTrigger;
-        SerializedProperty m_VolumeLayer;
+        //SerializedProperty m_VolumeTrigger;
+        //SerializedProperty m_VolumeLayer;
 
         SerializedProperty m_AntialiasingMode;
         SerializedProperty m_TaaJitterSpread;
@@ -31,7 +31,7 @@ namespace UnityEditor.Rendering.PostProcessing
         SerializedProperty m_FxaaKeepAlpha;
 
         SerializedProperty m_FogEnabled;
-        SerializedProperty m_FogExcludeSkybox;
+        SerializedProperty m_FogMode;
 
         SerializedProperty m_ShowToolkit;
         SerializedProperty m_ShowCustomSorter;
@@ -58,8 +58,8 @@ namespace UnityEditor.Rendering.PostProcessing
         {
             m_StopNaNPropagation = FindProperty(x => x.stopNaNPropagation);
             m_DirectToCameraTarget = FindProperty(x => x.finalBlitToCameraTarget);
-            m_VolumeTrigger = FindProperty(x => x.volumeTrigger);
-            m_VolumeLayer = FindProperty(x => x.volumeLayer);
+            //m_VolumeTrigger = FindProperty(x => x.volumeTrigger);
+            //m_VolumeLayer = FindProperty(x => x.volumeLayer);
 
             m_AntialiasingMode = FindProperty(x => x.antialiasingMode);
             m_TaaJitterSpread = FindProperty(x => x.temporalAntialiasing.jitterSpread);
@@ -71,7 +71,7 @@ namespace UnityEditor.Rendering.PostProcessing
             m_FxaaKeepAlpha = FindProperty(x => x.fastApproximateAntialiasing.keepAlpha);
 
             m_FogEnabled = FindProperty(x => x.fog.enabled);
-            m_FogExcludeSkybox = FindProperty(x => x.fog.excludeSkybox);
+            m_FogMode = FindProperty(x => x.fog.skyboxMode);
 
             m_ShowToolkit = serializedObject.FindProperty("m_ShowToolkit");
             m_ShowCustomSorter = serializedObject.FindProperty("m_ShowCustomSorter");
@@ -128,21 +128,21 @@ namespace UnityEditor.Rendering.PostProcessing
                 var fieldRect = new Rect(labelRect.xMax, lineRect.y, lineRect.width - labelRect.width - 60f, lineRect.height);
                 var buttonRect = new Rect(fieldRect.xMax, lineRect.y, 60f, lineRect.height);
 
-                EditorGUI.PrefixLabel(labelRect, EditorUtilities.GetContent("Trigger|A transform that will act as a trigger for volume blending."));
-                m_VolumeTrigger.objectReferenceValue = (Transform)EditorGUI.ObjectField(fieldRect, m_VolumeTrigger.objectReferenceValue, typeof(Transform), true);
-                if (GUI.Button(buttonRect, EditorUtilities.GetContent("This|Assigns the current GameObject as a trigger."), EditorStyles.miniButton))
-                    m_VolumeTrigger.objectReferenceValue = m_Target.transform;
-
-                if (m_VolumeTrigger.objectReferenceValue == null)
-                    EditorGUILayout.HelpBox("No trigger has been set, the camera will only be affected by global volumes.", MessageType.Info);
-
-                EditorGUILayout.PropertyField(m_VolumeLayer, EditorUtilities.GetContent("Layer|This camera will only be affected by volumes in the selected scene-layers."));
-
-                int mask = m_VolumeLayer.intValue;
-                if (mask == 0)
-                    EditorGUILayout.HelpBox("No layer has been set, the trigger will never be affected by volumes.", MessageType.Warning);
-                else if (mask == -1 || ((mask & 1) != 0))
-                    EditorGUILayout.HelpBox("Do not use \"Everything\" or \"Default\" as a layer mask as it will slow down the volume blending process! Put post-processing volumes in their own dedicated layer for best performances.", MessageType.Warning);
+                //EditorGUI.PrefixLabel(labelRect, EditorUtilities.GetContent("Trigger|A transform that will act as a trigger for volume blending."));
+                //m_VolumeTrigger.objectReferenceValue = (Transform)EditorGUI.ObjectField(fieldRect, m_VolumeTrigger.objectReferenceValue, typeof(Transform), true);
+                //if (GUI.Button(buttonRect, EditorUtilities.GetContent("This|Assigns the current GameObject as a trigger."), EditorStyles.miniButton))
+                //    m_VolumeTrigger.objectReferenceValue = m_Target.transform;
+                //
+                //if (m_VolumeTrigger.objectReferenceValue == null)
+                //    EditorGUILayout.HelpBox("No trigger has been set, the camera will only be affected by global volumes.", MessageType.Info);
+                //
+                //EditorGUILayout.PropertyField(m_VolumeLayer, EditorUtilities.GetContent("Layer|This camera will only be affected by volumes in the selected scene-layers."));
+                //
+                //int mask = m_VolumeLayer.intValue;
+                //if (mask == 0)
+                //    EditorGUILayout.HelpBox("No layer has been set, the trigger will never be affected by volumes.", MessageType.Warning);
+                //else if (mask == -1 || ((mask & 1) != 0))
+                //    EditorGUILayout.HelpBox("Do not use \"Everything\" or \"Default\" as a layer mask as it will slow down the volume blending process! Put post-processing volumes in their own dedicated layer for best performances.", MessageType.Warning);
             }
             EditorGUI.indentLevel--;
 
@@ -204,7 +204,7 @@ namespace UnityEditor.Rendering.PostProcessing
 
                 if (m_FogEnabled.boolValue)
                 {
-                    EditorGUILayout.PropertyField(m_FogExcludeSkybox);
+                    EditorGUILayout.PropertyField(m_FogMode);
                     EditorGUILayout.HelpBox("This adds fog compatibility to the deferred rendering path; actual fog settings should be set in the Lighting panel.", MessageType.Info);
                 }
             }
@@ -235,7 +235,7 @@ namespace UnityEditor.Rendering.PostProcessing
                 if (GUILayout.Button(EditorUtilities.GetContent("Select all layer volumes|Selects all the volumes that will influence this layer."), EditorStyles.miniButton))
                 {
                     var volumes = RuntimeUtilities.GetAllSceneObjects<PostProcessVolume>()
-                        .Where(x => (m_VolumeLayer.intValue & (1 << x.gameObject.layer)) != 0)
+                        //.Where(x => (m_VolumeLayer.intValue & (1 << x.gameObject.layer)) != 0)
                         .Select(x => x.gameObject)
                         .Cast<UnityEngine.Object>()
                         .ToArray();

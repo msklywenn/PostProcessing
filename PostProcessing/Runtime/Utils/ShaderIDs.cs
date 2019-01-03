@@ -53,6 +53,12 @@ namespace UnityEngine.Rendering.PostProcessing
         internal static readonly int FogColor                        = Shader.PropertyToID("_FogColor");
         internal static readonly int FogParams                       = Shader.PropertyToID("_FogParams");
 
+        internal static readonly int Texture                         = Shader.PropertyToID("_Tex");
+        internal static readonly int Exposure                        = Shader.PropertyToID("_Exposure");
+        internal static readonly int Rotation                        = Shader.PropertyToID("_Rotation");
+        internal static readonly int Tint                            = Shader.PropertyToID("_Tint");
+        internal static readonly int SkyCubemap                      = Shader.PropertyToID("_SkyCubemap");
+
         internal static readonly int VelocityScale                   = Shader.PropertyToID("_VelocityScale");
         internal static readonly int MaxBlurRadius                   = Shader.PropertyToID("_MaxBlurRadius");
         internal static readonly int RcpMaxBlurRadius                = Shader.PropertyToID("_RcpMaxBlurRadius");

@@ -32,7 +32,7 @@ namespace UnityEngine.Rendering.PostProcessing
         readonly List<PostProcessVolume> m_Volumes;
         readonly Dictionary<int, bool> m_SortNeeded;
         readonly List<PostProcessEffectSettings> m_BaseSettings;
-        readonly List<Collider> m_TempColliders;
+        //readonly List<Collider> m_TempColliders;
 
         /// <summary>
         /// This dictionary maps all <see cref="PostProcessEffectSettings"/> available to their
@@ -47,7 +47,7 @@ namespace UnityEngine.Rendering.PostProcessing
             m_Volumes = new List<PostProcessVolume>();
             m_SortNeeded = new Dictionary<int, bool>();
             m_BaseSettings = new List<PostProcessEffectSettings>();
-            m_TempColliders = new List<Collider>(5);
+            //m_TempColliders = new List<Collider>(5);
 
             settingsTypes = new Dictionary<Type, PostProcessAttribute>();
             ReloadBaseTypes();
@@ -110,10 +110,14 @@ namespace UnityEngine.Rendering.PostProcessing
         public void GetActiveVolumes(PostProcessLayer layer, List<PostProcessVolume> results, bool skipDisabled = true, bool skipZeroWeight = true)
         {
             // If no trigger is set, only global volumes will have influence
+#if false
             int mask = layer.volumeLayer.value;
             var volumeTrigger = layer.volumeTrigger;
             bool onlyGlobal = volumeTrigger == null;
             var triggerPos = onlyGlobal ? Vector3.zero : volumeTrigger.position;
+#else
+            int mask = 1; // default layer
+#endif
 
             // Sort the cached volume list(s) for the given layer mask if needed and return it
             var volumes = GrabVolumes(mask);
@@ -126,12 +130,15 @@ namespace UnityEngine.Rendering.PostProcessing
                     continue;
 
                 // Global volume always have influence
+#if false
                 if (volume.isGlobal)
+#endif
                 {
                     results.Add(volume);
                     continue;
                 }
 
+#if false
                 if (onlyGlobal)
                     continue;
 
@@ -162,6 +169,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 // Check for influence
                 if (closestDistanceSqr <= blendDistSqr)
                     results.Add(volume);
+#endif
             }
         }
 
@@ -175,7 +183,7 @@ namespace UnityEngine.Rendering.PostProcessing
             if (layer == null)
                 throw new ArgumentNullException("layer");
 
-            return GetHighestPriorityVolume(layer.volumeLayer);
+            return GetHighestPriorityVolume(1);// layer.volumeLayer);
         }
 
         /// <summary>
@@ -224,7 +232,9 @@ namespace UnityEngine.Rendering.PostProcessing
 
             var volume = gameObject.AddComponent<PostProcessVolume>();
             volume.priority = priority;
+#if false
             volume.isGlobal = true;
+#endif
             var profile = volume.profile;
 
             foreach (var s in settings)
@@ -319,10 +329,14 @@ namespace UnityEngine.Rendering.PostProcessing
             ReplaceData(postProcessLayer);
 
             // If no trigger is set, only global volumes will have influence
+#if false
             int mask = postProcessLayer.volumeLayer.value;
             var volumeTrigger = postProcessLayer.volumeTrigger;
             bool onlyGlobal = volumeTrigger == null;
             var triggerPos = onlyGlobal ? Vector3.zero : volumeTrigger.position;
+#else
+            int mask = 1; // default
+#endif
 
             // Sort the cached volume list(s) for the given layer mask if needed and return it
             var volumes = GrabVolumes(mask);
@@ -343,12 +357,15 @@ namespace UnityEngine.Rendering.PostProcessing
                 var settings = volume.profileRef.settings;
 
                 // Global volume always have influence
+#if false
                 if (volume.isGlobal)
+#endif
                 {
                     postProcessLayer.OverrideSettings(settings, Mathf.Clamp01(volume.weight));
                     continue;
                 }
 
+#if false
                 if (onlyGlobal)
                     continue;
 
@@ -374,6 +391,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 }
 
                 colliders.Clear();
+
                 float blendDistSqr = volume.blendDistance * volume.blendDistance;
 
                 // Volume has no influence, ignore it
@@ -391,6 +409,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
                 // No need to clamp01 the interpolation factor as it'll always be in [0;1[ range
                 postProcessLayer.OverrideSettings(settings, interpFactor * Mathf.Clamp01(volume.weight));
+#endif
             }
         }
 

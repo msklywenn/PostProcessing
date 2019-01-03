@@ -5,11 +5,11 @@ using UnityEngine.Assertions;
 
 namespace UnityEngine.Rendering.PostProcessing
 {
-#if UNITY_2017_2_OR_NEWER
-    using XRSettings = UnityEngine.XR.XRSettings;
-#elif UNITY_5_6_OR_NEWER
-    using XRSettings = UnityEngine.VR.VRSettings;
-#endif
+//#if UNITY_2017_2_OR_NEWER
+//    using XRSettings = UnityEngine.XR.XRSettings;
+//#elif UNITY_5_6_OR_NEWER
+//    using XRSettings = UnityEngine.VR.VRSettings;
+//#endif
 
     /// <summary>
     /// This is the component responsible for rendering post-processing effects. It must be put on
@@ -53,6 +53,7 @@ namespace UnityEngine.Rendering.PostProcessing
             TemporalAntialiasing
         }
 
+#if false
         /// <summary>
         /// This is transform that will be drive the volume blending feature. In some cases you may
         /// want to use a transform other than the camera, e.g. for a top down game you'll want the
@@ -68,6 +69,7 @@ namespace UnityEngine.Rendering.PostProcessing
         /// volumes in dedicated layers instead of the default one for best performances.
         /// </summary>
         public LayerMask volumeLayer;
+#endif
 
         /// <summary>
         /// If <c>true</c>, it will kill any invalid / NaN pixel and replace it with a black color
@@ -364,7 +366,7 @@ namespace UnityEngine.Rendering.PostProcessing
         // components, this will do fine
         void Reset()
         {
-            volumeTrigger = transform;
+            //volumeTrigger = transform;
         }
 
         void OnPreCull()
@@ -387,7 +389,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 m_Camera.ResetProjectionMatrix();
             m_Camera.nonJitteredProjectionMatrix = m_Camera.projectionMatrix;
 
-#if !UNITY_SWITCH
+#if false
             if (m_Camera.stereoEnabled)
             {
                 m_Camera.ResetStereoProjectionMatrices();

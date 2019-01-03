@@ -76,6 +76,8 @@ Shader "Hidden/PostProcessing/FinalPass"
                 {
                     color.a = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.texcoordStereo).a;
                 }
+                #else
+                color.a = 1;
                 #endif
             }
             #else

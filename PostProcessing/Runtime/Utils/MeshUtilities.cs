@@ -7,19 +7,22 @@ namespace UnityEngine.Rendering.PostProcessing
     static class MeshUtilities
     {
         static Dictionary<PrimitiveType, Mesh> s_Primitives;
-        static Dictionary<Type, PrimitiveType> s_ColliderPrimitives;
+        //static Dictionary<Type, PrimitiveType> s_ColliderPrimitives;
 
         static MeshUtilities()
         {
             s_Primitives = new Dictionary<PrimitiveType, Mesh>();
+#if false
             s_ColliderPrimitives = new Dictionary<Type, PrimitiveType>
             {
                 { typeof(BoxCollider), PrimitiveType.Cube },
                 { typeof(SphereCollider), PrimitiveType.Sphere },
                 { typeof(CapsuleCollider), PrimitiveType.Capsule }
             };
+#endif
         }
 
+#if false
         internal static Mesh GetColliderMesh(Collider collider)
         {
             var type = collider.GetType();
@@ -30,6 +33,7 @@ namespace UnityEngine.Rendering.PostProcessing
             Assert.IsTrue(s_ColliderPrimitives.ContainsKey(type), "Unknown collider");
             return GetPrimitive(s_ColliderPrimitives[type]);
         }
+#endif
 
         internal static Mesh GetPrimitive(PrimitiveType primitiveType)
         {

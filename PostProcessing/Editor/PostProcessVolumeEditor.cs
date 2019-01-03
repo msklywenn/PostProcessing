@@ -8,8 +8,8 @@ namespace UnityEditor.Rendering.PostProcessing
     {
         SerializedProperty m_Profile;
 
-        SerializedProperty m_IsGlobal;
-        SerializedProperty m_BlendRadius;
+        //SerializedProperty m_IsGlobal;
+        //SerializedProperty m_BlendRadius;
         SerializedProperty m_Weight;
         SerializedProperty m_Priority;
 
@@ -19,8 +19,8 @@ namespace UnityEditor.Rendering.PostProcessing
         {
             m_Profile = FindProperty(x => x.sharedProfile);
 
-            m_IsGlobal = FindProperty(x => x.isGlobal);
-            m_BlendRadius = FindProperty(x => x.blendDistance);
+            //m_IsGlobal = FindProperty(x => x.isGlobal);
+            //m_BlendRadius = FindProperty(x => x.blendDistance);
             m_Weight = FindProperty(x => x.weight);
             m_Priority = FindProperty(x => x.priority);
 
@@ -46,10 +46,10 @@ namespace UnityEditor.Rendering.PostProcessing
         {
             serializedObject.Update();
 
-            EditorGUILayout.PropertyField(m_IsGlobal);
-
-            if (!m_IsGlobal.boolValue) // Blend radius is not needed for global volumes
-                EditorGUILayout.PropertyField(m_BlendRadius);
+            //EditorGUILayout.PropertyField(m_IsGlobal);
+            //
+            //if (!m_IsGlobal.boolValue) // Blend radius is not needed for global volumes
+            //    EditorGUILayout.PropertyField(m_BlendRadius);
             
             EditorGUILayout.PropertyField(m_Weight);
             EditorGUILayout.PropertyField(m_Priority);

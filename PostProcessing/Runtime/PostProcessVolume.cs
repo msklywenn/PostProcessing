@@ -75,6 +75,7 @@ namespace UnityEngine.Rendering.PostProcessing
         /// <seealso cref="profile"/>
         public PostProcessProfile sharedProfile;
 
+#if false
         /// <summary>
         /// Should this volume be applied to the whole scene?
         /// </summary>
@@ -87,6 +88,7 @@ namespace UnityEngine.Rendering.PostProcessing
         /// </summary>
         [Min(0f), Tooltip("The distance (from the attached Collider) to start blending from. A value of 0 means there will be no blending and the Volume overrides will be applied immediatly upon entry to the attached Collider.")]
         public float blendDistance = 0f;
+#endif
 
         /// <summary>
         /// The total weight of this volume in the scene. 0 means it won't do anything, 1 means full
@@ -166,14 +168,14 @@ namespace UnityEngine.Rendering.PostProcessing
 
         int m_PreviousLayer;
         float m_PreviousPriority;
-        List<Collider> m_TempColliders;
+        //List<Collider> m_TempColliders;
         PostProcessProfile m_InternalProfile;
 
         void OnEnable()
         {
             PostProcessManager.instance.Register(this);
             m_PreviousLayer = gameObject.layer;
-            m_TempColliders = new List<Collider>();
+            //m_TempColliders = new List<Collider>();
         }
 
         void OnDisable()
@@ -207,11 +209,11 @@ namespace UnityEngine.Rendering.PostProcessing
         // TODO: Look into a better volume previsualization system
         void OnDrawGizmos()
         {
-            var colliders = m_TempColliders;
-            GetComponents(colliders);
+            //var colliders = m_TempColliders;
+            //GetComponents(colliders);
 
-            if (isGlobal || colliders == null)
-                return;
+            //if (isGlobal || colliders == null)
+            //    return;
             
 #if UNITY_EDITOR
             // Can't access the UnityEditor.Rendering.PostProcessing namespace from here, so
@@ -228,6 +230,7 @@ namespace UnityEngine.Rendering.PostProcessing
             Gizmos.matrix = Matrix4x4.TRS(transform.position, transform.rotation, scale);
 
             // Draw a separate gizmo for each collider
+#if false
             foreach (var collider in colliders)
             {
                 if (!collider.enabled)
@@ -272,6 +275,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
 
             colliders.Clear();
+#endif
         }
     }
 }
