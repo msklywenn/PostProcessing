@@ -6,16 +6,24 @@ using UnityEngine.Rendering.PostProcessing;
 
 namespace UnityEditor.Rendering.PostProcessing
 {
-    class ProfileFactory
+    /// <summary>
+    /// An utility class to help the creation of new post-processing profile assets.
+    /// </summary>
+    public sealed class ProfileFactory
     {
         [MenuItem("Assets/Create/Post-processing Profile", priority = 201)]
         static void CreatePostProcessProfile()
         {
-            var icon = EditorGUIUtility.FindTexture("ScriptableObject Icon");
-            ProjectWindowUtil.StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreatePostProcessProfile>(), "New Post-processing Profile.asset", icon, null);
+            //var icon = EditorGUIUtility.FindTexture("ScriptableObject Icon");
+            ProjectWindowUtil.StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreatePostProcessProfile>(), "New Post-processing Profile.asset", null, null);
         }
 
-        internal static PostProcessProfile CreatePostProcessProfileAtPath(string path)
+        /// <summary>
+        /// Creates a post-processing profile asset at the given location.
+        /// </summary>
+        /// <param name="path">The path to use relative to the project folder</param>
+        /// <returns>The newly created profile</returns>
+        public static PostProcessProfile CreatePostProcessProfileAtPath(string path)
         {
             var profile = ScriptableObject.CreateInstance<PostProcessProfile>();
             profile.name = Path.GetFileName(path);
@@ -25,7 +33,14 @@ namespace UnityEditor.Rendering.PostProcessing
             return profile;
         }
 
-        internal static PostProcessProfile CreatePostProcessProfile(Scene scene, string targetName)
+        /// <summary>
+        /// Creates a post-processing profile asset and automatically put it in a sub folder next
+        /// to the given scene.
+        /// </summary>
+        /// <param name="scene">A scene</param>
+        /// <param name="targetName">A name for the new profile</param>
+        /// <returns>The newly created profile</returns>
+        public static PostProcessProfile CreatePostProcessProfile(Scene scene, string targetName)
         {
             var path = string.Empty;
 

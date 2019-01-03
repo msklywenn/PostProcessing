@@ -6,8 +6,13 @@
 // Don't forget to update 'AutoExposureRenderer.cs' if you change these values !
 #define HISTOGRAM_BINS          128
 #define HISTOGRAM_TEXELS        HISTOGRAM_BINS / 4
-#define HISTOGRAM_THREAD_X      16
-#define HISTOGRAM_THREAD_Y      16
+#if SHADER_API_GLES3
+    #define HISTOGRAM_THREAD_X      16
+    #define HISTOGRAM_THREAD_Y      8
+#else
+    #define HISTOGRAM_THREAD_X      16
+    #define HISTOGRAM_THREAD_Y      16
+#endif
 
 float GetHistogramBinFromLuminance(float value, float2 scaleOffset)
 {
@@ -24,12 +29,10 @@ float GetBinValue(StructuredBuffer<uint> buffer, uint index, float maxHistogramV
     return float(buffer[index]) * maxHistogramValue;
 }
 
-// Done once in the vertex shader
 float FindMaxHistogramValue(StructuredBuffer<uint> buffer)
 {
     uint maxValue = 0u;
 
-    UNITY_UNROLL
     for (uint i = 0; i < HISTOGRAM_BINS; i++)
     {
         uint h = buffer[i];

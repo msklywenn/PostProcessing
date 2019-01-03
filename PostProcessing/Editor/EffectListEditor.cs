@@ -7,29 +7,49 @@ using UnityEngine.Rendering.PostProcessing;
 
 namespace UnityEditor.Rendering.PostProcessing
 {
-    sealed class EffectListEditor
+    /// <summary>
+    /// This class is used to draw the user interface in the inspector for all the settings
+    /// contained in a <see cref="PostProcessProfile"/>.
+    /// </summary>
+    public sealed class EffectListEditor
     {
+        /// <summary>
+        /// A reference to the <see cref="PostProcessProfile"/> being displayed by this editor.
+        /// </summary>
+        public PostProcessProfile asset { get; private set; }
+
         Editor m_BaseEditor;
 
-        PostProcessProfile m_Asset;
         SerializedObject m_SerializedObject;
         SerializedProperty m_SettingsProperty;
 
         Dictionary<Type, Type> m_EditorTypes; // SettingsType => EditorType
         List<PostProcessEffectBaseEditor> m_Editors;
 
+        /// <summary>
+        /// Creates a new instance to be used inside an existing <see cref="Editor"/>.
+        /// </summary>
+        /// <param name="editor">A reference to the parent editor instance.</param>
         public EffectListEditor(Editor editor)
         {
             Assert.IsNotNull(editor);
             m_BaseEditor = editor;
         }
 
+        /// <summary>
+        /// Initializes the editor. This method should be called before <see cref="OnGUI"/> is
+        /// called.
+        /// </summary>
+        /// <param name="asset">A reference to the <see cref="PostProcessProfile"/> that will be
+        /// displayed.</param>
+        /// <param name="serializedObject">A <see cref="SerializedObject"/> of the given <paramref
+        /// name="asset"/> instance.</param>
         public void Init(PostProcessProfile asset, SerializedObject serializedObject)
         {
             Assert.IsNotNull(asset);
             Assert.IsNotNull(serializedObject);
             
-            m_Asset = asset;
+            this.asset = asset;
             m_SerializedObject = serializedObject;
             m_SettingsProperty = serializedObject.FindProperty("settings");
             Assert.IsNotNull(m_SettingsProperty);
@@ -38,14 +58,12 @@ namespace UnityEditor.Rendering.PostProcessing
             m_Editors = new List<PostProcessEffectBaseEditor>();
 
             // Gets the list of all available postfx editors
-            var editorTypes = AppDomain.CurrentDomain.GetAssemblies()
-                .SelectMany(
-                    a => a.GetTypes()
-                    .Where(
-                        t => t.IsSubclassOf(typeof(PostProcessEffectBaseEditor))
-                          && t.IsDefined(typeof(PostProcessEditorAttribute), false)
-                    )
-                ).ToList();
+            var editorTypes = RuntimeUtilities.GetAllAssemblyTypes()
+                                .Where(
+                                    t => t.IsSubclassOf(typeof(PostProcessEffectBaseEditor))
+                                      && t.IsDefined(typeof(PostProcessEditorAttribute), false)
+                                      && !t.IsAbstract
+                                );
 
             // Map them to their corresponding settings type
             foreach (var editorType in editorTypes)
@@ -55,8 +73,8 @@ namespace UnityEditor.Rendering.PostProcessing
             }
 
             // Create editors for existing settings
-            for (int i = 0; i < m_Asset.settings.Count; i++)
-                CreateEditor(m_Asset.settings[i], m_SettingsProperty.GetArrayElementAtIndex(i));
+            for (int i = 0; i < this.asset.settings.Count; i++)
+                CreateEditor(this.asset.settings[i], m_SettingsProperty.GetArrayElementAtIndex(i));
 
             // Keep track of undo/redo to redraw the inspector when that happens
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
@@ -64,7 +82,7 @@ namespace UnityEditor.Rendering.PostProcessing
 
         void OnUndoRedoPerformed()
         {
-            m_Asset.isDirty = true;
+            asset.isDirty = true;
 
             // Dumb hack to make sure the serialized object is up to date on undo (else there'll be
             // a state mismatch when this class is used in a GameObject inspector).
@@ -106,10 +124,13 @@ namespace UnityEditor.Rendering.PostProcessing
             m_Editors.Clear();
 
             // Recreate editors for existing settings, if any
-            for (int i = 0; i < m_Asset.settings.Count; i++)
-                CreateEditor(m_Asset.settings[i], m_SettingsProperty.GetArrayElementAtIndex(i));
+            for (int i = 0; i < asset.settings.Count; i++)
+                CreateEditor(asset.settings[i], m_SettingsProperty.GetArrayElementAtIndex(i));
         }
 
+        /// <summary>
+        /// This method should be called when the editor is destroyed or disabled.
+        /// </summary>
         public void Clear()
         {
             if (m_Editors == null)
@@ -124,71 +145,83 @@ namespace UnityEditor.Rendering.PostProcessing
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
         }
 
+        /// <summary>
+        /// Draws the settings for the <see cref="PostProcessProfile"/> referenced in the editor.
+        /// </summary>
         public void OnGUI()
         {
-            if (m_Asset.isDirty)
+            if (asset == null)
+                return;
+
+            if (asset.isDirty)
             {
                 RefreshEditors();
-                m_Asset.isDirty = false;
+                asset.isDirty = false;
             }
-            
-            EditorGUILayout.LabelField(EditorUtilities.GetContent("Overrides"), EditorStyles.boldLabel);
 
-            // Override list
-            for (int i = 0; i < m_Editors.Count; i++)
+            bool isEditable = !VersionControl.Provider.isActive
+                || AssetDatabase.IsOpenForEdit(asset, StatusQueryOptions.UseCachedIfPossible);
+
+            using (new EditorGUI.DisabledScope(!isEditable))
             {
-                var editor = m_Editors[i];
-                string title = editor.GetDisplayTitle();
-                int id = i; // Needed for closure capture below
+                EditorGUILayout.LabelField(EditorUtilities.GetContent("Overrides"), EditorStyles.boldLabel);
 
-                EditorUtilities.DrawSplitter();
-                bool displayContent = EditorUtilities.DrawHeader(
-                    title,
-                    editor.baseProperty,
-                    editor.activeProperty,
-                    editor.target,
-                    () => ResetEffectOverride(editor.target.GetType(), id),
-                    () => RemoveEffectOverride(id)
-                );
-
-                if (displayContent)
+                // Override list
+                for (int i = 0; i < m_Editors.Count; i++)
                 {
-                    using (new EditorGUI.DisabledScope(!editor.activeProperty.boolValue))
-                        editor.OnInternalInspectorGUI();
-                }
-            }
+                    var editor = m_Editors[i];
+                    string title = editor.GetDisplayTitle();
+                    int id = i; // Needed for closure capture below
 
-            if (m_Editors.Count > 0)
-            {
-                EditorUtilities.DrawSplitter();
+                    EditorUtilities.DrawSplitter();
+                    bool displayContent = EditorUtilities.DrawHeader(
+                        title,
+                        editor.baseProperty,
+                        editor.activeProperty,
+                        editor.target,
+                        () => ResetEffectOverride(editor.target.GetType(), id),
+                        () => RemoveEffectOverride(id)
+                        );
+
+                    if (displayContent)
+                    {
+                        using (new EditorGUI.DisabledScope(!editor.activeProperty.boolValue))
+                            editor.OnInternalInspectorGUI();
+                    }
+                }
+
+                if (m_Editors.Count > 0)
+                {
+                    EditorUtilities.DrawSplitter();
+                    EditorGUILayout.Space();
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox("No override set on this volume.", MessageType.Info);
+                }
+
+                if (GUILayout.Button("Add effect...", EditorStyles.miniButton))
+                {
+                    var menu = new GenericMenu();
+
+                    var typeMap = PostProcessManager.instance.settingsTypes;
+                    foreach (var kvp in typeMap)
+                    {
+                        var type = kvp.Key;
+                        var title = EditorUtilities.GetContent(kvp.Value.menuItem);
+                        bool exists = asset.HasSettings(type);
+
+                        if (!exists)
+                            menu.AddItem(title, false, () => AddEffectOverride(type));
+                        else
+                            menu.AddDisabledItem(title);
+                    }
+
+                    menu.ShowAsContext();
+                }
+
                 EditorGUILayout.Space();
             }
-            else
-            {
-                EditorGUILayout.HelpBox("No override set on this volume.", MessageType.Info);
-            }
-            
-            if (GUILayout.Button("Add effect...", EditorStyles.miniButton))
-            {
-                var menu = new GenericMenu();
-
-                var typeMap = PostProcessManager.instance.settingsTypes;
-                foreach (var kvp in typeMap)
-                {
-                    var type = kvp.Key;
-                    var title = EditorUtilities.GetContent(kvp.Value.menuItem);
-                    bool exists = m_Asset.HasSettings(type);
-
-                    if (!exists)
-                        menu.AddItem(title, false, () => AddEffectOverride(type));
-                    else
-                        menu.AddDisabledItem(title);
-                }
-
-                menu.ShowAsContext();
-            }
-
-            EditorGUILayout.Space();
         }
 
         void AddEffectOverride(Type type)
@@ -198,22 +231,26 @@ namespace UnityEditor.Rendering.PostProcessing
             var effect = CreateNewEffect(type);
             Undo.RegisterCreatedObjectUndo(effect, "Add Effect Override");
 
-            // Store this new effect as a subasset so we can reference it safely afterwards
-            AssetDatabase.AddObjectToAsset(effect, m_Asset);
+            // Store this new effect as a subasset so we can reference it safely afterwards. Only when its not an instantiated profile
+            if (EditorUtility.IsPersistent(asset))
+                AssetDatabase.AddObjectToAsset(effect, asset);
 
             // Grow the list first, then add - that's how serialized lists work in Unity
             m_SettingsProperty.arraySize++;
             var effectProp = m_SettingsProperty.GetArrayElementAtIndex(m_SettingsProperty.arraySize - 1);
             effectProp.objectReferenceValue = effect;
 
-            // Force save / refresh
-            EditorUtility.SetDirty(m_Asset);
-            AssetDatabase.SaveAssets();
-
             // Create & store the internal editor object for this effect
             CreateEditor(effect, effectProp);
 
             m_SerializedObject.ApplyModifiedProperties();
+
+            // Force save / refresh. Important to do this last because SaveAssets can cause effect to become null!
+            if (EditorUtility.IsPersistent(asset))
+            {
+                EditorUtility.SetDirty(asset);
+                AssetDatabase.SaveAssets();
+            }
         }
 
         void RemoveEffectOverride(int id)
@@ -253,7 +290,7 @@ namespace UnityEditor.Rendering.PostProcessing
             Undo.DestroyObjectImmediate(effect);
 
             // Force save / refresh
-            EditorUtility.SetDirty(m_Asset);
+            EditorUtility.SetDirty(asset);
             AssetDatabase.SaveAssets();
         }
 
@@ -278,7 +315,7 @@ namespace UnityEditor.Rendering.PostProcessing
             Undo.RegisterCreatedObjectUndo(newEffect, "Reset Effect Override");
 
             // Store this new effect as a subasset so we can reference it safely afterwards
-            AssetDatabase.AddObjectToAsset(newEffect, m_Asset);
+            AssetDatabase.AddObjectToAsset(newEffect, asset);
 
             // Put it in the reserved space
             property.objectReferenceValue = newEffect;
@@ -293,7 +330,7 @@ namespace UnityEditor.Rendering.PostProcessing
             Undo.DestroyObjectImmediate(prevSettings);
             
             // Force save / refresh
-            EditorUtility.SetDirty(m_Asset);
+            EditorUtility.SetDirty(asset);
             AssetDatabase.SaveAssets();
         }
 

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using UnityEngine;
@@ -7,13 +8,24 @@ namespace UnityEditor.Rendering.PostProcessing
 {
     sealed class CubeLutAssetImporter : AssetPostprocessor
     {
+        static List<string> s_Excluded = new List<string>()
+        {
+            "Linear to sRGB r1",
+            "Linear to Unity Log r1",
+            "sRGB to Linear r1",
+            "sRGB to Unity Log r1",
+            "Unity Log to Linear r1",
+            "Unity Log to sRGB r1"
+        };
+
         static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
         {
             foreach (string path in imported)
             {
                 string ext = Path.GetExtension(path);
-                
-                if (string.IsNullOrEmpty(ext))
+                string filename = Path.GetFileNameWithoutExtension(path);
+
+                if (string.IsNullOrEmpty(ext) || s_Excluded.Contains(filename))
                     continue;
 
                 ext = ext.ToLowerInvariant();
@@ -105,7 +117,7 @@ namespace UnityEditor.Rendering.PostProcessing
                 for (int j = 0; j < 3; j++)
                 {
                     float d;
-                    if (!float.TryParse(row[j], out d))
+                    if (!float.TryParse(row[j], NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out d))
                     {
                         Debug.LogError("Invalid data on line " + i);
                         break;
@@ -191,7 +203,7 @@ namespace UnityEditor.Rendering.PostProcessing
             for (int j = 0; j < 3; j++)
             {
                 float d;
-                if (!float.TryParse(domainStrs[j], out d))
+                if (!float.TryParse(domainStrs[j], NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out d))
                 {
                     Debug.LogError("Invalid data on line " + i);
                     return false;

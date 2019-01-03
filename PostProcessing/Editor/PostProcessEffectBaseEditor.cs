@@ -4,6 +4,12 @@ using UnityEngine.Rendering.PostProcessing;
 
 namespace UnityEditor.Rendering.PostProcessing
 {
+    /// <summary>
+    /// The base class for all post-processing effect related editors. If you want to customize the
+    /// look of a custom post-processing effect, inherit from <see cref="PostProcessEffectEditor{T}"/>
+    /// instead.
+    /// </summary>
+    /// <seealso cref="PostProcessEffectEditor{T}"/>
     public class PostProcessEffectBaseEditor
     {
         internal PostProcessEffectSettings target { get; private set; }
@@ -19,6 +25,9 @@ namespace UnityEditor.Rendering.PostProcessing
         {
         }
 
+        /// <summary>
+        /// Repaints the inspector.
+        /// </summary>
         public void Repaint()
         {
             m_Inspector.Repaint();
@@ -34,10 +43,16 @@ namespace UnityEditor.Rendering.PostProcessing
             OnEnable();
         }
 
+        /// <summary>
+        /// Called when the editor is initialized.
+        /// </summary>
         public virtual void OnEnable()
         {
         }
 
+        /// <summary>
+        /// Called when the editor is de-initialized.
+        /// </summary>
         public virtual void OnDisable()
         {
         }
@@ -51,10 +66,19 @@ namespace UnityEditor.Rendering.PostProcessing
             serializedObject.ApplyModifiedProperties();
         }
 
+        /// <summary>
+        /// Called every time the inspector is being redrawn. This is where you should add your UI
+        /// drawing code.
+        /// </summary>
         public virtual void OnInspectorGUI()
         {
         }
 
+        /// <summary>
+        /// Returns the label to use as the effect title. You can override this to return a custom
+        /// label, else it will use the effect type as the title.
+        /// </summary>
+        /// <returns>The label to use as the effect title</returns>
         public virtual string GetDisplayTitle()
         {
             return ObjectNames.NicifyVariableName(target.GetType().Name);
@@ -86,12 +110,21 @@ namespace UnityEditor.Rendering.PostProcessing
             serializedObject.Update();
         }
 
+        /// <summary>
+        /// Draws a property UI element.
+        /// </summary>
+        /// <param name="property">The property to draw</param>
         protected void PropertyField(SerializedParameterOverride property)
         {
             var title = EditorUtilities.GetContent(property.displayName);
             PropertyField(property, title);
         }
 
+        /// <summary>
+        /// Draws a property UI element with a custom title and/or tooltip.
+        /// </summary>
+        /// <param name="property">The property to draw</param>
+        /// <param name="title">A custom title and/or tooltip</param>
         protected void PropertyField(SerializedParameterOverride property, GUIContent title)
         {
             // Check for DisplayNameAttribute first
@@ -107,17 +140,34 @@ namespace UnityEditor.Rendering.PostProcessing
                     title.tooltip = tooltipAttr.tooltip;
             }
 
-            // Look for a compatible attribute decorator and break as soon as we find one
+            // Look for a compatible attribute decorator
             AttributeDecorator decorator = null;
             Attribute attribute = null;
 
             foreach (var attr in property.attributes)
             {
-                decorator = EditorUtilities.GetDecorator(attr.GetType());
-                attribute = attr;
+                // Use the first decorator we found
+                if (decorator == null)
+                {
+                    decorator = EditorUtilities.GetDecorator(attr.GetType());
+                    attribute = attr;
+                }
 
-                if (decorator != null)
-                    break;
+                // Draw unity built-in Decorators (Space, Header)
+                if (attr is PropertyAttribute)
+                {
+                    if (attr is SpaceAttribute)
+                    {
+                        EditorGUILayout.GetControlRect(false, (attr as SpaceAttribute).height);
+                    }
+                    else if (attr is HeaderAttribute)
+                    {
+                        var rect = EditorGUILayout.GetControlRect(false, 24f);
+                        rect.y += 8f;
+                        rect = EditorGUI.IndentedRect(rect);
+                        EditorGUI.LabelField(rect, (attr as HeaderAttribute).header, Styling.headerLabel);
+                    }
+                }
             }
 
             bool invalidProp = false;
@@ -148,7 +198,17 @@ namespace UnityEditor.Rendering.PostProcessing
                     }
 
                     // Default unity field
-                    EditorGUILayout.PropertyField(property.value, title);
+                    if (property.value.hasVisibleChildren
+                        && property.value.propertyType != SerializedPropertyType.Vector2
+                        && property.value.propertyType != SerializedPropertyType.Vector3)
+                    {
+                        GUILayout.Space(12f);
+                        EditorGUILayout.PropertyField(property.value, title, true);
+                    }
+                    else
+                    {
+                        EditorGUILayout.PropertyField(property.value, title);
+                    }
                 }
             }
         }

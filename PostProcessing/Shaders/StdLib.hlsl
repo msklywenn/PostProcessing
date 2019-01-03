@@ -9,28 +9,37 @@
 // -----------------------------------------------------------------------------
 // API macros
 
-#if SHADER_API_PSSL
+#if defined(SHADER_API_PSSL)
     #include "API/PSSL.hlsl"
-#elif SHADER_API_XBOXONE
+#elif defined(SHADER_API_XBOXONE)
     #include "API/XboxOne.hlsl"
-#elif SHADER_API_D3D11
+#elif defined(SHADER_API_D3D11)
     #include "API/D3D11.hlsl"
-#elif SHADER_API_D3D12
+#elif defined(SHADER_API_D3D12)
     #include "API/D3D12.hlsl"
-#elif SHADER_API_D3D9 || SHADER_API_D3D11_9X
+#elif defined(SHADER_API_D3D9) || defined(SHADER_API_D3D11_9X)
     #include "API/D3D9.hlsl"
-#elif SHADER_API_VULKAN
+#elif defined(SHADER_API_VULKAN)
     #include "API/Vulkan.hlsl"
-#elif SHADER_API_METAL
+#elif defined(SHADER_API_SWITCH)
+    #include "API/Switch.hlsl"
+#elif defined(SHADER_API_METAL)
     #include "API/Metal.hlsl"
+#elif defined(SHADER_API_PSP2)
+    #include "API/PSP2.hlsl"
 #else
     #include "API/OpenGL.hlsl"
+#endif
+
+#if defined(SHADER_API_PSSL) || defined(SHADER_API_XBOXONE) || defined(SHADER_API_SWITCH) || defined(SHADER_API_PSP2)
+    #define SHADER_API_CONSOLE
 #endif
 
 // -----------------------------------------------------------------------------
 // Constants
 
-#define HALF_MAX        65504.0
+#define HALF_MAX        65504.0 // (2 - 2^-10) * 2^15
+#define HALF_MAX_MINUS1 65472.0 // (2 - 2^-9) * 2^15
 #define EPSILON         1.0e-4
 #define PI              3.14159265359
 #define TWO_PI          6.28318530718
@@ -55,7 +64,7 @@ float rcp(float value)
 }
 #endif
 
-#ifndef mad
+#if defined(SHADER_API_GLES)
 #define mad(a, b, c) (a * b + c)
 #endif
 
@@ -146,10 +155,37 @@ float4 PositivePow(float4 base, float4 power)
     return pow(max(abs(base), float4(FLT_EPSILON, FLT_EPSILON, FLT_EPSILON, FLT_EPSILON)), power);
 }
 
+// NaN checker
+// /Gic isn't enabled on fxc so we can't rely on isnan() anymore
+bool IsNan(float x)
+{
+    // For some reason the following tests outputs "internal compiler error" randomly on desktop
+    // so we'll use a safer but slightly slower version instead :/
+    //return (x <= 0.0 || 0.0 <= x) ? false : true;
+    return (x < 0.0 || x > 0.0 || x == 0.0) ? false : true;
+}
+
+bool AnyIsNan(float2 x)
+{
+    return IsNan(x.x) || IsNan(x.y);
+}
+
+bool AnyIsNan(float3 x)
+{
+    return IsNan(x.x) || IsNan(x.y) || IsNan(x.z);
+}
+
+bool AnyIsNan(float4 x)
+{
+    return IsNan(x.x) || IsNan(x.y) || IsNan(x.z) || IsNan(x.w);
+}
+
 // -----------------------------------------------------------------------------
 // Std unity data
 
 float4x4 unity_CameraProjection;
+float4x4 unity_MatrixVP;
+float4x4 unity_ObjectToWorld;
 float4x4 unity_WorldToCamera;
 float3 _WorldSpaceCameraPos;
 float4 _ProjectionParams;         // x: 1 (-1 flipped), y: near,     z: far,       w: 1/far
@@ -233,7 +269,15 @@ struct VaryingsDefault
 {
     float4 vertex : SV_POSITION;
     float2 texcoord : TEXCOORD0;
+    float2 texcoordStereo : TEXCOORD1;
+#if STEREO_INSTANCING_ENABLED
+    uint stereoTargetEyeIndex : SV_RenderTargetArrayIndex;
+#endif
 };
+
+#if STEREO_INSTANCING_ENABLED
+float _DepthSlice;
+#endif
 
 VaryingsDefault VertDefault(AttributesDefault v)
 {
@@ -245,15 +289,34 @@ VaryingsDefault VertDefault(AttributesDefault v)
     o.texcoord = o.texcoord * float2(1.0, -1.0) + float2(0.0, 1.0);
 #endif
 
+    o.texcoordStereo = TransformStereoScreenSpaceTex(o.texcoord, 1.0);
+
     return o;
 }
 
-VaryingsDefault VertDefaultNoFlip(AttributesDefault v)
+float4 _UVTransform; // xy: scale, wz: translate
+
+#if STEREO_DOUBLEWIDE_TARGET
+float4 _PosScaleOffset; // xy: scale, wz: offset
+#endif
+
+VaryingsDefault VertUVTransform(AttributesDefault v)
 {
     VaryingsDefault o;
+
+#if STEREO_DOUBLEWIDE_TARGET
+    o.vertex = float4(v.vertex.xy * _PosScaleOffset.xy + _PosScaleOffset.zw, 0.0, 1.0);
+#else
     o.vertex = float4(v.vertex.xy, 0.0, 1.0);
-    o.texcoord = TransformTriangleVertexToUV(v.vertex.xy);
+#endif
+    o.texcoord = TransformTriangleVertexToUV(v.vertex.xy) * _UVTransform.xy + _UVTransform.zw;
+    o.texcoordStereo = TransformStereoScreenSpaceTex(o.texcoord, 1.0);
+#if STEREO_INSTANCING_ENABLED
+    o.stereoTargetEyeIndex = (uint)_DepthSlice;
+#endif
     return o;
 }
+
+#define TRANSFORM_TEX(tex,name) (tex.xy * name##_ST.xy + name##_ST.zw)
 
 #endif // UNITY_POSTFX_STDLIB

@@ -7,6 +7,7 @@ Shader "Hidden/PostProcessing/GrainBaker"
         #include "../StdLib.hlsl"
 
         float _Phase;
+        float3 _NoiseParameters;
 
         // Implementation based on Timothy Lottes' "Large Grain"
         // Reference code: https://www.shadertoy.com/view/4sSXDW
@@ -14,7 +15,7 @@ Shader "Hidden/PostProcessing/GrainBaker"
         float Noise(float2 n, float x)
         {
             n += x;
-            return frac(sin(dot(n.xy, float2(12.9898, 78.233))) * 43758.5453);
+            return frac(sin(dot(n.xy, _NoiseParameters.xy)) * _NoiseParameters.z);
         }
 
         float Step1(float2 uv, float n)
@@ -64,13 +65,13 @@ Shader "Hidden/PostProcessing/GrainBaker"
 
         float4 FragGrain(VaryingsDefault i) : SV_Target
         {
-            float grain = Step3BW(i.texcoord * float2(128.0, 128.0));
+            float grain = Step3BW(i.texcoordStereo * float2(128.0, 128.0));
             return float4(grain.xxx, 1.0);
         }
 
         float4 FragGrainColored(VaryingsDefault i) : SV_Target
         {
-            float3 grain = Step3(i.texcoord * float2(128.0, 128.0));
+            float3 grain = Step3(i.texcoordStereo * float2(128.0, 128.0));
             return float4(grain, 1.0);
         }
 

@@ -1,17 +1,34 @@
 namespace UnityEngine.Rendering.PostProcessing
 {
+    /// <summary>
+    /// A set of utilities to manipulate color values.
+    /// </summary>
     public static class ColorUtilities
     {
-        // An analytical model of chromaticity of the standard illuminant, by Judd et al.
-        // http://en.wikipedia.org/wiki/Standard_illuminant#Illuminant_series_D
-        // Slightly modifed to adjust it with the D65 white point (x=0.31271, y=0.32902).
+        /// <summary>
+        /// Gets the Y coordinate for the chromaticity of the standard illuminant.
+        /// </summary>
+        /// <param name="x">The X coordinate</param>
+        /// <returns>The Y coordinate for the chromaticity of the standard illuminant</returns>
+        /// <remarks>
+        /// Based on: "An analytical model of chromaticity of the standard illuminant" by Judd et al.
+        /// http://en.wikipedia.org/wiki/Standard_illuminant#Illuminant_series_D
+        /// Slightly modified to adjust it with the D65 white point (x=0.31271, y=0.32902).
+        /// </remarks>
         public static float StandardIlluminantY(float x)
         {
             return 2.87f * x - 3f * x * x - 0.27509507f;
         }
 
-        // CIE xy chromaticity to CAT02 LMS.
-        // http://en.wikipedia.org/wiki/LMS_color_space#CAT02
+        /// <summary>
+        /// Converts CIExy chromaticity to CAT02 LMS.
+        /// </summary>
+        /// <param name="x">The X coordinate</param>
+        /// <param name="y">The Y coordinate</param>
+        /// <returns>The CIExy chromaticity converted to CAT02 LMS</returns>
+        /// <remarks>
+        /// See: http://en.wikipedia.org/wiki/LMS_color_space#CAT02
+        /// </remarks>
         public static Vector3 CIExyToLMS(float x, float y)
         {
             float Y = 1f;
@@ -25,6 +42,12 @@ namespace UnityEngine.Rendering.PostProcessing
             return new Vector3(L, M, S);
         }
 
+        /// <summary>
+        /// Computes the color balance coefficients in the CAT02 LMS space.
+        /// </summary>
+        /// <param name="temperature">The color temperature offset</param>
+        /// <param name="tint">The color tint offset (green/magenta)</param>
+        /// <returns>The color balance coefficients in the CAT02 LMS space.</returns>
         public static Vector3 ComputeColorBalance(float temperature, float tint)
         {
             // Range ~[-1.67;1.67] works best
@@ -42,7 +65,11 @@ namespace UnityEngine.Rendering.PostProcessing
             return new Vector3(w1.x / w2.x, w1.y / w2.y, w1.z / w2.z);
         }
 
-        // Alpha/w is offset
+        /// <summary>
+        /// Converts trackball values to Lift coefficients.
+        /// </summary>
+        /// <param name="color">The trackball color value (with offset in the W component)</param>
+        /// <returns>The converted trackball value</returns>
         public static Vector3 ColorToLift(Vector4 color)
         {
             // Shadows
@@ -54,7 +81,11 @@ namespace UnityEngine.Rendering.PostProcessing
             return new Vector3(S.x + liftOffset, S.y + liftOffset, S.z + liftOffset);
         }
 
-        // Alpha/w is offset
+        /// <summary>
+        /// Converts trackball values to inverted Gamma coefficients.
+        /// </summary>
+        /// <param name="color">The trackball color value (with offset in the W component)</param>
+        /// <returns>The converted trackball value</returns>
         public static Vector3 ColorToInverseGamma(Vector4 color)
         {
             // Midtones
@@ -70,7 +101,11 @@ namespace UnityEngine.Rendering.PostProcessing
             );
         }
 
-        // Alpha/w is offset
+        /// <summary>
+        /// Converts trackball values to Gain coefficients.
+        /// </summary>
+        /// <param name="color">The trackball color value (with offset in the W component)</param>
+        /// <returns>The converted trackball value</returns>
         public static Vector3 ColorToGain(Vector4 color)
         {
             // Highlights
@@ -84,36 +119,43 @@ namespace UnityEngine.Rendering.PostProcessing
 
         // Alexa LogC converters (El 1000)
         // See http://www.vocas.nl/webfm_send/964
+        const float logC_cut = 0.011361f;
+        const float logC_a = 5.555556f;
+        const float logC_b = 0.047996f;
+        const float logC_c = 0.244161f;
+        const float logC_d = 0.386036f;
+        const float logC_e = 5.301883f;
+        const float logC_f = 0.092819f;
+
+        /// <summary>
+        /// Converts a LogC (Alexa El 1000) value to linear.
+        /// </summary>
+        /// <param name="x">A LogC (Alexa El 1000) value</param>
+        /// <returns>The input convert to linear</returns>
         public static float LogCToLinear(float x)
         {
-            const float cut = 0.011361f;
-            const float a = 5.555556f;
-            const float b = 0.047996f;
-            const float c = 0.244161f;
-            const float d = 0.386036f;
-            const float e = 5.301883f;
-            const float f = 0.092819f;
-
-            return (x > e * cut + f)
-                ? (Mathf.Pow(10f, (x - d) / c) - b) / a
-                : (x - f) / e;
+            return x > logC_e * logC_cut + logC_f
+                ? (Mathf.Pow(10f, (x - logC_d) / logC_c) - logC_b) / logC_a
+                : (x - logC_f) / logC_e;
         }
 
+        /// <summary>
+        /// Converts a linear value to LogC (Alexa El 1000).
+        /// </summary>
+        /// <param name="x">A linear value</param>
+        /// <returns>The input value converted to LogC</returns>
         public static float LinearToLogC(float x)
         {
-            const float cut = 0.011361f;
-            const float a = 5.555556f;
-            const float b = 0.047996f;
-            const float c = 0.244161f;
-            const float d = 0.386036f;
-            const float e = 5.301883f;
-            const float f = 0.092819f;
-
-            return (x > cut)
-                ? c * Mathf.Log10(a * x + b) + d
-                : e * x + f;
+            return x > logC_cut
+                ? logC_c * Mathf.Log10(logC_a * x + logC_b) + logC_d
+                : logC_e * x + logC_f;
         }
 
+        /// <summary>
+        /// Converts a color to its ARGB hexadecimal representation.
+        /// </summary>
+        /// <param name="c">The color to convert</param>
+        /// <returns>The color converted to its ARGB hexadecimal representation</returns>
         public static uint ToHex(Color c)
         {
             return ((uint)(c.a * 255) << 24)
@@ -122,6 +164,11 @@ namespace UnityEngine.Rendering.PostProcessing
                  | ((uint)(c.b * 255));
         }
 
+        /// <summary>
+        /// Converts an ARGB hexadecimal input to a color structure.
+        /// </summary>
+        /// <param name="hex">The hexadecimal input</param>
+        /// <returns>The ARGB hexadecimal input converted to a color structure.</returns>
         public static Color ToRGBA(uint hex)
         {
             return new Color(

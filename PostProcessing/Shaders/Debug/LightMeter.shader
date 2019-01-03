@@ -2,6 +2,7 @@ Shader "Hidden/PostProcessing/Debug/LightMeter"
 {
     HLSLINCLUDE
 
+        #pragma exclude_renderers gles gles3 d3d11_9x
         #pragma target 4.5
         #include "../StdLib.hlsl"
         #include "../Builtins/ExposureHistogram.hlsl"
@@ -45,30 +46,21 @@ Shader "Hidden/PostProcessing/Debug/LightMeter"
             float bin = saturate(float(_HistogramBuffer[ix]) * i.maxValue);
             float fill = step(i.texcoord.y, bin);
 
-            float4 color = float4(lerp(0.05, 0.75, fill).xxx, 0.8);
+            float4 color = float4(lerp(0.0, 0.75, fill).xxx, 1.0);
 
         #if AUTO_EXPOSURE
-            const float3 kRangeColor = float3(0.05, 0.4, 0.6);
-            const float3 kAvgColor = float3(1.0, 0.0, 1.0);
+            const float3 kRangeColor = float3(0.05, 0.3, 0.4);
+            const float3 kAvgColor = float3(0.75, 0.1, 1.0);
 
             // Min / max brightness markers
             float luminanceMin = GetHistogramBinFromLuminance(_Params.z, _ScaleOffsetRes.xy);
             float luminanceMax = GetHistogramBinFromLuminance(_Params.w, _ScaleOffsetRes.xy);
-
-            color.rgb += fill.rrr;
 
             if (i.texcoord.x > luminanceMin && i.texcoord.x < luminanceMax)
             {
                 color.rgb = fill.rrr * kRangeColor;
                 color.rgb += kRangeColor;
             }
-
-            // Current average luminance marker
-            float luminanceAvg = GetHistogramBinFromLuminance(i.avgLuminance, _ScaleOffsetRes.xy);
-            float avgPx = luminanceAvg * _ScaleOffsetRes.z;
-
-            if (abs(i.texcoord.x - luminanceAvg) < _ScaleOffsetRes.z * 2.0)
-                color.rgb = kAvgColor;
         #endif
 
         #if COLOR_GRADING_HDR
@@ -86,6 +78,15 @@ Shader "Hidden/PostProcessing/Debug/LightMeter"
                 curves.gba += float3(0.5, (1.0).xx);
 
             color = any(curves) ? curves : color;
+        #endif
+
+        #if AUTO_EXPOSURE
+            // Current average luminance marker
+            float luminanceAvg = GetHistogramBinFromLuminance(i.avgLuminance, _ScaleOffsetRes.xy);
+            float avgPx = luminanceAvg * _ScaleOffsetRes.z;
+
+            if (abs(i.texcoord.x - luminanceAvg) < _ScaleOffsetRes.z * 2.0)
+                color.rgb = kAvgColor;
         #endif
 
             return color;
