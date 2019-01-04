@@ -763,8 +763,8 @@ namespace UnityEngine.Rendering.PostProcessing
                 return isSinglePassStereoSelected && Application.isPlaying;
 #elif UNITY_SWITCH
                 return false;
-#elif UNITY_2017_2_OR_NEWER
-                return UnityEngine.XR.XRSettings.eyeTextureDesc.vrUsage == VRTextureUsage.TwoEyes;
+//#elif UNITY_2017_2_OR_NEWER
+//                return UnityEngine.XR.XRSettings.eyeTextureDesc.vrUsage == VRTextureUsage.TwoEyes;
 #else
                 return false;
 #endif
