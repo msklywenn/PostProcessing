@@ -1230,7 +1230,7 @@ namespace UnityEngine.Rendering.PostProcessing
                     cmd.BlitFullscreenTriangleToDoubleWide(context.source, context.destination, uberSheet, 0, eye);
                 }
                 else
-                    cmd.BlitFullscreenTriangle(context.source, context.destination, uberSheet, 0, false, context.camera.pixelRect);
+                    cmd.BlitFullscreenTriangle(context.source, context.destination, uberSheet, 0, false);
 
                 if (tempTarget > -1)
                     cmd.ReleaseTemporaryRT(tempTarget);
