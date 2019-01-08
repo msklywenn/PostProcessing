@@ -437,7 +437,7 @@ namespace UnityEngine.Rendering.PostProcessing
             context.source = context.destination;
             src = dst;
 
-            if (opaqueOnlyEffectsRemaining == 1)
+            if (opaqueOnlyEffectsRemaining <= 1)
             {
                 context.destination = cameraTarget;
             }
