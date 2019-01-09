@@ -71,6 +71,7 @@ Shader "Hidden/PostProcessing/DeferredFog"
             depth = Linear01Depth(depth);
             float dist = ComputeFogDistance(depth) - FOG_START;
             half fog = 1.0 - ComputeFog(dist);
+            float skybox = depth > SKYBOX_THREASHOLD_VALUE;
 
             // Look up the skybox color.
             half3 skyColor = texCUBE(_SkyCubemap, i.ray);
@@ -78,7 +79,7 @@ Shader "Hidden/PostProcessing/DeferredFog"
 
             // Lerp between source color to skybox color with fog amount.
             half4 sceneColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.deffault.texcoordStereo);
-            return lerp(sceneColor, half4(skyColor, 1), fog);
+            return lerp(sceneColor, half4(skyColor, 1), fog + skybox);
         }
 
     ENDHLSL
