@@ -79,7 +79,7 @@ Shader "Hidden/PostProcessing/DeferredFog"
 
             // Lerp between source color to skybox color with fog amount.
             half4 sceneColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.deffault.texcoordStereo);
-            return lerp(sceneColor, half4(skyColor, 1), fog + skybox);
+            return lerp(sceneColor, half4(skyColor, 1), saturate(fog + skybox));
         }
 
     ENDHLSL
