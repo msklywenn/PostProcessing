@@ -835,6 +835,23 @@ namespace UnityEngine.Rendering.PostProcessing
                    format == RenderTextureFormat.RGB111110Float;
         }
 
+        public static bool hasAlphaChannel(RenderTextureFormat format)
+        {
+            return format == RenderTextureFormat.ARGBHalf
+                || format == RenderTextureFormat.ARGB4444
+                || format == RenderTextureFormat.ARGB1555
+                || format == RenderTextureFormat.Default // I'm assuming yes
+                || format == RenderTextureFormat.ARGB2101010
+                || format == RenderTextureFormat.DefaultHDR // I'm assuming yes
+                || format == RenderTextureFormat.ARGB64
+                || format == RenderTextureFormat.ARGBFloat
+                || format == RenderTextureFormat.ARGBInt
+                || format == RenderTextureFormat.BGRA32
+                || format == RenderTextureFormat.RGBAUShort
+                || format == RenderTextureFormat.BGRA10101010_XR
+                || format == RenderTextureFormat.BGR101010_XR;
+        }
+
         /// <summary>
         /// Properly destroys a given Unity object.
         /// </summary>

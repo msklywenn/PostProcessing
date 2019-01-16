@@ -517,6 +517,7 @@ namespace UnityEngine.Rendering.PostProcessing
             // This works on right eye because it is resolved/populated at runtime
             var cameraTarget = new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget);
 
+            Profiling.Profiler.BeginSample("OpaqueOnly");
             if (opaqueOnlyEffects > 0)
             {
                 var cmd = m_LegacyCmdBufferOpaque;
@@ -553,6 +554,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
                 cmd.ReleaseTemporaryRT(srcTarget);
             }
+            Profiling.Profiler.EndSample();
             
             // Post-transparency stack
             int tempRt = -1;
@@ -756,6 +758,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
         void SetupContext(PostProcessRenderContext context)
         {
+            Profiling.Profiler.BeginSample("SetupContext");
             RuntimeUtilities.s_Resources = m_Resources;
 
             m_IsRenderingInSceneView = context.camera.cameraType == CameraType.SceneView;
@@ -779,6 +782,7 @@ namespace UnityEngine.Rendering.PostProcessing
             // Unsafe to keep this around but we need it for OnGUI events for debug views
             // Will be removed eventually
             m_CurrentContext = context;
+            Profiling.Profiler.EndSample();
         }
 
         /// <summary>
@@ -792,6 +796,7 @@ namespace UnityEngine.Rendering.PostProcessing
         {
             if (m_SettingsUpdateNeeded)
             {
+                Profiling.Profiler.BeginSample("UpdateVolumeSystem");
                 cmd.BeginSample("VolumeBlending");
                 PostProcessManager.instance.UpdateSettings(this, cam);
                 cmd.EndSample("VolumeBlending");
@@ -801,6 +806,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 // Needed in SRP so that _RenderViewportScaleFactor isn't 0
                 if (RuntimeUtilities.scriptableRenderPipelineActive)
                     Shader.SetGlobalFloat(ShaderIDs.RenderViewportScaleFactor, 1f);
+                Profiling.Profiler.EndSample();
             }
 
             m_SettingsUpdateNeeded = false;
@@ -833,6 +839,7 @@ namespace UnityEngine.Rendering.PostProcessing
         /// <param name="context">The current post-processing context.</param>
         public void Render(PostProcessRenderContext context)
         {
+            Profiling.Profiler.BeginSample("Render");
             if (RuntimeUtilities.scriptableRenderPipelineActive)
                 SetupContext(context);
 
@@ -976,6 +983,7 @@ namespace UnityEngine.Rendering.PostProcessing
             debugLayer.EndFrame();
             m_SettingsUpdateNeeded = true;
             m_NaNKilled = false;
+            Profiling.Profiler.EndSample();
         }
 
         int RenderInjectionPoint(PostProcessEvent evt, PostProcessRenderContext context, string marker, int releaseTargetAfterUse = -1)
@@ -1093,7 +1101,8 @@ namespace UnityEngine.Rendering.PostProcessing
                 context.destination = tempTarget;
 
                 // Handle FXAA's keep alpha mode
-                if (antialiasingMode == Antialiasing.FastApproximateAntialiasing && !fastApproximateAntialiasing.keepAlpha)
+                if (antialiasingMode == Antialiasing.FastApproximateAntialiasing
+                        && !fastApproximateAntialiasing.keepAlpha || !RuntimeUtilities.hasAlphaChannel(context.sourceFormat))
                     uberSheet.properties.SetFloat(ShaderIDs.LumaInAlpha, 1f);
             }
 
@@ -1203,7 +1212,7 @@ namespace UnityEngine.Rendering.PostProcessing
                         : "FXAA"
                     );
 
-                    if (fastApproximateAntialiasing.keepAlpha)
+                    if (fastApproximateAntialiasing.keepAlpha || !RuntimeUtilities.hasAlphaChannel(context.sourceFormat))
                         uberSheet.EnableKeyword("FXAA_KEEP_ALPHA");
                 }
                 else if (antialiasingMode == Antialiasing.SubpixelMorphologicalAntialiasing && subpixelMorphologicalAntialiasing.IsSupported())
