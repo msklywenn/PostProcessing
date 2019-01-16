@@ -32,8 +32,20 @@ Shader "Hidden/PostProcessing/DeferredFog"
             defAttribs.vertex = v.vertex;
             o.deffault = VertDefault(defAttribs);
 
+            float tanHalfFovX = 1 / unity_CameraProjection[0][0];
+            float tanHalfFovY = 1 / unity_CameraProjection[1][1];
+            float near = _ProjectionParams.y;
+            float3 right = unity_WorldToCamera[0].xyz * near * tanHalfFovX;
+            float3 top = unity_WorldToCamera[1].xyz * near * tanHalfFovY;
+            float2 corner = v.vertex.xy;
+#if UNITY_UV_STARTS_AT_TOP
+            corner.y = -corner.y;
+#endif
+            float3 origin = unity_WorldToCamera[2].xyz * near;
+            o.ray = origin + corner.x * right + corner.y * top;
+
             float _SkyRotation = FOG_SKYBOX_ROTATION;
-            o.ray = RotateAroundYAxis(v.texcoord1.xyz, _SkyRotation);
+            o.ray = RotateAroundYAxis(o.ray, _SkyRotation);
 
             return o;
         }
