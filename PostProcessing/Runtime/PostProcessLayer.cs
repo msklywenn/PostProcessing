@@ -173,6 +173,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
         bool m_SettingsUpdateNeeded = true;
         bool m_IsRenderingInSceneView = false;
+        bool m_hadFogActive = false;
 
         TargetPool m_TargetPool;
 
@@ -200,6 +201,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 return;
 
             InitLegacy();
+            m_SettingsUpdateNeeded = true;
         }
 
         void InitLegacy()
@@ -341,6 +343,8 @@ namespace UnityEngine.Rendering.PostProcessing
                     m_Camera.RemoveCommandBuffer(CameraEvent.BeforeImageEffectsOpaque, m_LegacyCmdBufferOpaque);
                 if (m_LegacyCmdBuffer != null)
                     m_Camera.RemoveCommandBuffer(CameraEvent.BeforeImageEffects, m_LegacyCmdBuffer);
+
+                PostProcessManager.instance.ClearVolumeCache(m_Camera);
             }
 
             temporalAntialiasing.Release();
@@ -452,6 +456,18 @@ namespace UnityEngine.Rendering.PostProcessing
         void BuildCommandBuffers()
         {
             var context = m_CurrentContext;
+
+            bool isFogActive = fog.IsEnabledAndSupported(context);
+            if (isFogActive)
+                fog.UpdateShaderParameters(context);
+
+            bool hasChanged = UpdateVolumeSystem(m_Camera);
+            hasChanged |= isFogActive && !m_hadFogActive;
+            if (!hasChanged)
+                return;
+
+            m_hadFogActive = isFogActive;
+
             var sourceFormat = m_Camera.allowHDR ? RuntimeUtilities.defaultHDRRenderTextureFormat : RenderTextureFormat.Default;
 
             if (!RuntimeUtilities.isFloatingPointFormat(sourceFormat))
@@ -471,7 +487,6 @@ namespace UnityEngine.Rendering.PostProcessing
 
             context.command = m_LegacyCmdBufferOpaque;
             TextureLerper.instance.BeginFrame(context);
-            UpdateVolumeSystem(context.camera, context.command);
 
             // Lighting & opaque-only effects
             var aoBundle = GetBundle<AmbientOcclusion>();
@@ -507,7 +522,6 @@ namespace UnityEngine.Rendering.PostProcessing
                 aoRenderer.Get().RenderAfterOpaque(context);
             }
 
-            bool isFogActive = fog.IsEnabledAndSupported(context);
             bool hasCustomOpaqueOnlyEffects = HasOpaqueOnlyEffects(context);
             int opaqueOnlyEffects = 0;
             opaqueOnlyEffects += isScreenSpaceReflectionsActive ? 1 : 0;
@@ -682,7 +696,10 @@ namespace UnityEngine.Rendering.PostProcessing
                     if (toParam.overrideState)
                     {
                         var fromParam = target.parameters[i];
-                        fromParam.Interp(fromParam, toParam, interpFactor);
+                        if (interpFactor >= 1f)
+                            fromParam.Override(toParam);
+                        else if (interpFactor > 0f)
+                            fromParam.Interp(fromParam, toParam, interpFactor);
                     }
                 }
             }
@@ -785,6 +802,8 @@ namespace UnityEngine.Rendering.PostProcessing
             Profiling.Profiler.EndSample();
         }
 
+        int lastActiveVolumeCount = 0;
+
         /// <summary>
         /// Updates the state of the volume system. This should be called before any other
         /// post-processing method when running in a scriptable render pipeline. You don't need to
@@ -792,14 +811,15 @@ namespace UnityEngine.Rendering.PostProcessing
         /// </summary>
         /// <param name="cam">The currently rendering camera.</param>
         /// <param name="cmd">A command buffer to fill.</param>
-        public void UpdateVolumeSystem(Camera cam, CommandBuffer cmd)
+        public bool UpdateVolumeSystem(Camera cam)
         {
-            if (m_SettingsUpdateNeeded)
+            bool hasChanged = false;
+            int volumeCount = PostProcessManager.instance.RegisteredVolumeCount;
+
+            if (m_SettingsUpdateNeeded || volumeCount != lastActiveVolumeCount)
             {
                 Profiling.Profiler.BeginSample("UpdateVolumeSystem");
-                cmd.BeginSample("VolumeBlending");
-                PostProcessManager.instance.UpdateSettings(this, cam);
-                cmd.EndSample("VolumeBlending");
+                hasChanged = PostProcessManager.instance.UpdateSettings(this, cam);
                 m_TargetPool.Reset();
 
                 // TODO: fix me once VR support is in SRP
@@ -809,7 +829,10 @@ namespace UnityEngine.Rendering.PostProcessing
                 Profiling.Profiler.EndSample();
             }
 
+            lastActiveVolumeCount = volumeCount;
+
             m_SettingsUpdateNeeded = false;
+            return hasChanged;
         }
 
         /// <summary>
@@ -828,7 +851,7 @@ namespace UnityEngine.Rendering.PostProcessing
             // Update & override layer settings first (volume blending), will only be done once per
             // frame, either here or in Render() if there isn't any opaque-only effect to render.
             // TODO: should be removed, keeping this here for older SRPs
-            UpdateVolumeSystem(context.camera, context.command);
+            UpdateVolumeSystem(context.camera);
 
             RenderList(sortedBundles[PostProcessEvent.BeforeTransparent], context, "OpaqueOnly");
         }
@@ -849,7 +872,7 @@ namespace UnityEngine.Rendering.PostProcessing
             // Update & override layer settings first (volume blending) if the opaque only pass
             // hasn't been called this frame.
             // TODO: should be removed, keeping this here for older SRPs
-            UpdateVolumeSystem(context.camera, context.command);
+            UpdateVolumeSystem(context.camera);
 
             // Do a NaN killing pass if needed
             int lastTarget = -1;

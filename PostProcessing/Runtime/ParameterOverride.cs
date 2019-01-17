@@ -14,6 +14,7 @@ namespace UnityEngine.Rendering.PostProcessing
         public bool overrideState;
 
         internal abstract void Interp(ParameterOverride from, ParameterOverride to, float t);
+        internal abstract void Override(ParameterOverride to);
 
         /// <summary>
         /// Returns the computed hash code for this parameter.
@@ -119,6 +120,12 @@ namespace UnityEngine.Rendering.PostProcessing
         {
             // Note: this isn't completely safe but it'll do fine
             Interp(from.GetValue<T>(), to.GetValue<T>(), t);
+        }
+
+        internal override void Override(ParameterOverride param)
+        {
+            // Note: this isn't completely safe but it'll do fine
+            Override(param.GetValue<T>());
         }
 
         /// <summary>

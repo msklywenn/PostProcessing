@@ -27,11 +27,16 @@ namespace UnityEngine.Rendering.PostProcessing
             }
         }
 
+        public int RegisteredVolumeCount { get { return m_Volumes.Count; } }
+
         const int k_MaxLayerCount = 32; // Max amount of layers available in Unity
         readonly Dictionary<int, List<PostProcessVolume>> m_SortedVolumes;
         readonly List<PostProcessVolume> m_Volumes;
         readonly Dictionary<int, bool> m_SortNeeded;
         readonly List<PostProcessEffectSettings> m_BaseSettings;
+
+        Dictionary<Camera, int> lastVolumesHash = new Dictionary<Camera, int>();
+
         //readonly List<Collider> m_TempColliders;
 
         /// <summary>
@@ -323,11 +328,14 @@ namespace UnityEngine.Rendering.PostProcessing
             }
         }
 
-        internal void UpdateSettings(PostProcessLayer postProcessLayer, Camera camera)
+        internal void ClearVolumeCache(Camera camera)
         {
-            // Reset to base state
-            ReplaceData(postProcessLayer);
+            if (lastVolumesHash.ContainsKey(camera))
+                lastVolumesHash.Remove(camera);
+        }
 
+        internal bool UpdateSettings(PostProcessLayer postProcessLayer, Camera camera)
+        {
             // If no trigger is set, only global volumes will have influence
 #if false
             int mask = postProcessLayer.volumeLayer.value;
@@ -340,6 +348,19 @@ namespace UnityEngine.Rendering.PostProcessing
 
             // Sort the cached volume list(s) for the given layer mask if needed and return it
             var volumes = GrabVolumes(mask);
+
+            int volumesHash = 5381;
+            foreach (var volume in volumes)
+            {
+                volumesHash = (volumesHash * 33) + volume.GetInstanceID().GetHashCode();
+                volumesHash = (volumesHash * 33) + volume.weight.GetHashCode();
+            }
+
+            if (lastVolumesHash.ContainsKey(camera) && volumesHash == lastVolumesHash[camera])
+                return false;
+
+            // Reset to base state
+            ReplaceData(postProcessLayer);
 
             // Traverse all volumes
             foreach (var volume in volumes)
@@ -411,6 +432,12 @@ namespace UnityEngine.Rendering.PostProcessing
                 postProcessLayer.OverrideSettings(settings, interpFactor * Mathf.Clamp01(volume.weight));
 #endif
             }
+
+            if (lastVolumesHash.ContainsKey(camera))
+                lastVolumesHash[camera] = volumesHash;
+            else
+                lastVolumesHash.Add(camera, volumesHash);
+            return true;
         }
 
         List<PostProcessVolume> GrabVolumes(LayerMask mask)

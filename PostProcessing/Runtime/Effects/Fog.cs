@@ -44,8 +44,10 @@ namespace UnityEngine.Rendering.PostProcessing
                 && context.camera.actualRenderingPath == RenderingPath.DeferredShading;  // In forward fog is already done at shader level
         }
 
-        internal void Render(PostProcessRenderContext context)
+        internal void UpdateShaderParameters(PostProcessRenderContext context)
         {
+            if (context.resources == null || context.resources.shaders == null || context.resources.shaders.deferredFog == null)
+                return;
 
             var sheet = context.propertySheets.Get(context.resources.shaders.deferredFog);
             sheet.ClearKeywords();
@@ -74,19 +76,20 @@ namespace UnityEngine.Rendering.PostProcessing
                 sheet.properties.SetVector(ShaderIDs.FogParams, new Vector4(RenderSettings.fogDensity,
                     RenderSettings.fogStartDistance, RenderSettings.fogEndDistance, -rotation));
                 sheet.properties.SetTexture(ShaderIDs.SkyCubemap, cubemap);
-
-                var cmd = context.command;
-                cmd.BlitFullscreenTriangle(context.source, context.destination, sheet, (int)skyboxMode);
             }
             else
             {
                 var fogColor = RuntimeUtilities.isLinearColorSpace ? RenderSettings.fogColor.linear : RenderSettings.fogColor;
                 sheet.properties.SetVector(ShaderIDs.FogColor, fogColor);
                 sheet.properties.SetVector(ShaderIDs.FogParams, new Vector3(RenderSettings.fogDensity, RenderSettings.fogStartDistance, RenderSettings.fogEndDistance));
-
-                var cmd = context.command;
-                cmd.BlitFullscreenTriangle(context.source, context.destination, sheet, (int)skyboxMode);
             }
+        }
+
+        internal void Render(PostProcessRenderContext context)
+        {
+            var sheet = context.propertySheets.Get(context.resources.shaders.deferredFog);
+            var cmd = context.command;
+            cmd.BlitFullscreenTriangle(context.source, context.destination, sheet, (int)skyboxMode);
         }
     }
 }
