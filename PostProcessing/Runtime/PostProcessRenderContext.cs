@@ -90,6 +90,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 {
                     width = m_Camera.pixelWidth;
                     height = m_Camera.pixelHeight;
+                    pixelRect = m_Camera.pixelRect;
 
 #if UNITY_2017_2_OR_NEWER
                     m_sourceDescriptor.width = width;
@@ -165,6 +166,8 @@ namespace UnityEngine.Rendering.PostProcessing
         /// The current camera height (in pixels).
         /// </summary>
         public int height { get; private set; }
+
+        public Rect pixelRect { get; private set; }
 
         /// <summary>
         /// Is stereo rendering active?
@@ -257,6 +260,7 @@ namespace UnityEngine.Rendering.PostProcessing
             xrActiveEye = (int)Camera.StereoscopicEye.Left;
             screenWidth = 0;
             screenHeight = 0;
+            pixelRect = Rect.zero;
 
             command = null;
             source = 0;

@@ -463,6 +463,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
             bool hasChanged = UpdateVolumeSystem(m_Camera);
             hasChanged |= isFogActive && !m_hadFogActive;
+            hasChanged |= context.pixelRect != m_Camera.pixelRect;
             if (!hasChanged)
                 return;
 
