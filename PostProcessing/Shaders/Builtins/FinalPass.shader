@@ -10,8 +10,11 @@ Shader "Hidden/PostProcessing/FinalPass"
         #include "../Colors.hlsl"
         #include "Dithering.hlsl"
 
-        // PS3 and XBOX360 aren't supported in Unity anymore, only use the PC variant
+#if defined(SHADER_API_SWITCH)
+#define FXAA_PC_CONSOLE 1
+#else
         #define FXAA_PC 1
+#endif
 
         #if FXAA_KEEP_ALPHA
             // Luma hasn't been encoded in alpha
