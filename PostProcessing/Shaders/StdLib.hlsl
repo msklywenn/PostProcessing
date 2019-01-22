@@ -177,7 +177,11 @@ bool AnyIsNan(float3 x)
 
 bool AnyIsNan(float4 x)
 {
+#if MOBILE_OR_CONSOLE
+    return any(isnan(x));
+#else
     return IsNan(x.x) || IsNan(x.y) || IsNan(x.z) || IsNan(x.w);
+#endif
 }
 
 // -----------------------------------------------------------------------------

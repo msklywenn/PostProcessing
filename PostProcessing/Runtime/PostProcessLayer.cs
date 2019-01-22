@@ -429,7 +429,7 @@ namespace UnityEngine.Rendering.PostProcessing
               
             return false;
 #else
-            return true;
+            return false;
 #endif
         }
 
@@ -462,10 +462,12 @@ namespace UnityEngine.Rendering.PostProcessing
                 fog.UpdateShaderParameters(context);
 
             bool hasChanged = UpdateVolumeSystem(m_Camera);
+#if !UNITY_EDITOR
             hasChanged |= isFogActive && !m_hadFogActive;
             hasChanged |= context.pixelRect != m_Camera.pixelRect;
             if (!hasChanged)
                 return;
+#endif
 
             m_hadFogActive = isFogActive;
 
@@ -581,7 +583,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 m_LegacyCmdBuffer.BuiltinBlit(cameraTarget, tempRt, RuntimeUtilities.copyStdMaterial, stopNaNPropagation ? 1 : 0);
                 if (!m_NaNKilled)
                     m_NaNKilled = stopNaNPropagation;
-
+            
                 context.source = tempRt;
             }
             else

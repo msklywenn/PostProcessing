@@ -83,7 +83,7 @@ Shader "Hidden/PostProcessing/Uber"
             float2 uvStereoDistorted = Distort(i.texcoordStereo);
             //<<<
 
-            half autoExposure = SAMPLE_TEXTURE2D(_AutoExposureTex, sampler_AutoExposureTex, uv).r;
+            //half autoExposure = SAMPLE_TEXTURE2D(_AutoExposureTex, sampler_AutoExposureTex, uv).r;
             half4 color = (0.0).xxxx;
 
             // Inspired by the method described in "Rendering Inside" [Playdead 2016]
@@ -143,7 +143,7 @@ Shader "Hidden/PostProcessing/Uber"
             }
             #endif
 
-            color.rgb *= autoExposure;
+            //color.rgb *= autoExposure;
 
             #if BLOOM || BLOOM_LOW
             {

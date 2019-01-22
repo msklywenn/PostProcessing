@@ -21,8 +21,8 @@ Shader "Hidden/PostProcessing/Bloom"
 
         half4 Prefilter(half4 color, float2 uv)
         {
-            half autoExposure = SAMPLE_TEXTURE2D(_AutoExposureTex, sampler_AutoExposureTex, uv).r;
-            color *= autoExposure;
+            //half autoExposure = SAMPLE_TEXTURE2D(_AutoExposureTex, sampler_AutoExposureTex, uv).r;
+            //color *= autoExposure;
             color = min(_Params.x, color); // clamp to max
             color = QuadraticThreshold(color, _Threshold.x, _Threshold.yzw);
             return color;
@@ -31,12 +31,16 @@ Shader "Hidden/PostProcessing/Bloom"
         half4 FragPrefilter13(VaryingsDefault i) : SV_Target
         {
             half4 color = DownsampleBox13Tap(TEXTURE2D_PARAM(_MainTex, sampler_MainTex), i.texcoord, UnityStereoAdjustedTexelSize(_MainTex_TexelSize).xy);
+            if (AnyIsNan(color))
+                color = (0.0).xxxx;
             return Prefilter(SafeHDR(color), i.texcoord);
         }
 
         half4 FragPrefilter4(VaryingsDefault i) : SV_Target
         {
             half4 color = DownsampleBox4Tap(TEXTURE2D_PARAM(_MainTex, sampler_MainTex), i.texcoord, UnityStereoAdjustedTexelSize(_MainTex_TexelSize).xy);
+            if (AnyIsNan(color))
+                color = (0.0).xxxx;
             return Prefilter(SafeHDR(color), i.texcoord);
         }
 

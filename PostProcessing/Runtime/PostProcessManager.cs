@@ -349,6 +349,7 @@ namespace UnityEngine.Rendering.PostProcessing
             // Sort the cached volume list(s) for the given layer mask if needed and return it
             var volumes = GrabVolumes(mask);
 
+#if !UNITY_EDITOR
             int volumesHash = 5381;
             foreach (var volume in volumes)
             {
@@ -358,6 +359,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
             if (lastVolumesHash.ContainsKey(camera) && volumesHash == lastVolumesHash[camera])
                 return false;
+#endif
 
             // Reset to base state
             ReplaceData(postProcessLayer);
@@ -433,10 +435,12 @@ namespace UnityEngine.Rendering.PostProcessing
 #endif
             }
 
+#if !UNITY_EDITOR
             if (lastVolumesHash.ContainsKey(camera))
                 lastVolumesHash[camera] = volumesHash;
             else
                 lastVolumesHash.Add(camera, volumesHash);
+#endif
             return true;
         }
 
