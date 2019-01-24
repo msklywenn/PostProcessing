@@ -444,6 +444,7 @@ namespace UnityEngine.Rendering.PostProcessing
             if (opaqueOnlyEffectsRemaining <= 1)
             {
                 context.destination = cameraTarget;
+                dst = -1;
             }
             else
             {
@@ -531,6 +532,9 @@ namespace UnityEngine.Rendering.PostProcessing
             opaqueOnlyEffects += isFogActive ? 1 : 0;
             opaqueOnlyEffects += hasCustomOpaqueOnlyEffects ? 1 : 0;
 
+            bool requiresBlit = RequiresInitialBlit(m_Camera, context) || opaqueOnlyEffects == 1;
+            opaqueOnlyEffects += requiresBlit ? 1 : 0;
+
             // This works on right eye because it is resolved/populated at runtime
             var cameraTarget = new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget);
 
@@ -544,11 +548,12 @@ namespace UnityEngine.Rendering.PostProcessing
                 int srcTarget = -1;
                 int dstTarget = -1;
 
-                UpdateSrcDstForOpaqueOnly(ref srcTarget, ref dstTarget, context, cameraTarget, opaqueOnlyEffects + 1); // + 1 for blit
+                UpdateSrcDstForOpaqueOnly(ref srcTarget, ref dstTarget, context, cameraTarget, opaqueOnlyEffects);
 
-                if (RequiresInitialBlit(m_Camera, context) || opaqueOnlyEffects == 1)
+                if (requiresBlit)
                 {
                     cmd.BuiltinBlit(context.source, context.destination, RuntimeUtilities.copyStdMaterial, stopNaNPropagation ? 1 : 0);
+                    opaqueOnlyEffects--;
                     UpdateSrcDstForOpaqueOnly(ref srcTarget, ref dstTarget, context, cameraTarget, opaqueOnlyEffects);
                 }
  
@@ -568,8 +573,6 @@ namespace UnityEngine.Rendering.PostProcessing
 
                 if (hasCustomOpaqueOnlyEffects)
                     RenderOpaqueOnly(context);
-
-                cmd.ReleaseTemporaryRT(srcTarget);
             }
             Profiling.Profiler.EndSample();
             
@@ -1112,6 +1115,8 @@ namespace UnityEngine.Rendering.PostProcessing
 
             if (isFinalPass && context.stereoActive && context.stereoRenderingMode == PostProcessRenderContext.StereoRenderingMode.SinglePassInstanced)
                 uberSheet.EnableKeyword("STEREO_INSTANCING_ENABLED");
+            if (context.autoExposure != null && context.autoExposure.IsEnabledAndSupported(context))
+                uberSheet.EnableKeyword("AUTO_EXPOSURE");
 
             var cmd = context.command;
             cmd.BeginSample("BuiltinStack");
@@ -1129,7 +1134,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 // Handle FXAA's keep alpha mode
                 if (antialiasingMode == Antialiasing.FastApproximateAntialiasing
                         && !fastApproximateAntialiasing.keepAlpha || !RuntimeUtilities.hasAlphaChannel(context.sourceFormat))
-                    uberSheet.properties.SetFloat(ShaderIDs.LumaInAlpha, 1f);
+                    uberSheet.EnableKeyword("LUMA_IN_ALPHA");
             }
 
             // Depth of field final combination pass used to be done in Uber which led to artifacts

@@ -451,80 +451,7 @@ namespace UnityEngine.Rendering.PostProcessing
             // frame...
             // It's not a very expensive operation anyway (we're talking about filling a 33x33x33
             // Lut on the GPU) but every little thing helps, especially on mobile.
-            {
-                CheckInternalLogLut();
-
-                // Lut setup
-                var compute = context.resources.computeShaders.lut3DBaker;
-                int kernel = 0;
-
-                switch (settings.tonemapper.value)
-                {
-                    case Tonemapper.None: kernel = compute.FindKernel("KGenLut3D_NoTonemap");
-                        break;
-                    case Tonemapper.Neutral: kernel = compute.FindKernel("KGenLut3D_NeutralTonemap");
-                        break;
-                    case Tonemapper.ACES: kernel = compute.FindKernel("KGenLut3D_AcesTonemap");
-                        break;
-                    case Tonemapper.Custom: kernel = compute.FindKernel("KGenLut3D_CustomTonemap");
-                        break;
-                }
-
-                var cmd = context.command;
-                cmd.SetComputeTextureParam(compute, kernel, "_Output", m_InternalLogLut);
-                cmd.SetComputeVectorParam(compute, "_Size", new Vector4(k_Lut3DSize, 1f / (k_Lut3DSize - 1f), 0f, 0f));
-
-                var colorBalance = ColorUtilities.ComputeColorBalance(settings.temperature.value, settings.tint.value);
-                cmd.SetComputeVectorParam(compute, "_ColorBalance", colorBalance);
-                cmd.SetComputeVectorParam(compute, "_ColorFilter", settings.colorFilter.value);
-
-                float hue = settings.hueShift.value / 360f;         // Remap to [-0.5;0.5]
-                float sat = settings.saturation.value / 100f + 1f;  // Remap to [0;2]
-                float con = settings.contrast.value / 100f + 1f;    // Remap to [0;2]
-                cmd.SetComputeVectorParam(compute, "_HueSatCon", new Vector4(hue, sat, con, 0f));
-
-                var channelMixerR = new Vector4(settings.mixerRedOutRedIn, settings.mixerRedOutGreenIn, settings.mixerRedOutBlueIn, 0f);
-                var channelMixerG = new Vector4(settings.mixerGreenOutRedIn, settings.mixerGreenOutGreenIn, settings.mixerGreenOutBlueIn, 0f);
-                var channelMixerB = new Vector4(settings.mixerBlueOutRedIn, settings.mixerBlueOutGreenIn, settings.mixerBlueOutBlueIn, 0f);
-                cmd.SetComputeVectorParam(compute, "_ChannelMixerRed", channelMixerR / 100f); // Remap to [-2;2]
-                cmd.SetComputeVectorParam(compute, "_ChannelMixerGreen", channelMixerG / 100f);
-                cmd.SetComputeVectorParam(compute, "_ChannelMixerBlue", channelMixerB / 100f);
-
-                var lift = ColorUtilities.ColorToLift(settings.lift.value * 0.2f);
-                var gain = ColorUtilities.ColorToGain(settings.gain.value * 0.8f);
-                var invgamma = ColorUtilities.ColorToInverseGamma(settings.gamma.value * 0.8f);
-                cmd.SetComputeVectorParam(compute, "_Lift", new Vector4(lift.x, lift.y, lift.z, 0f));
-                cmd.SetComputeVectorParam(compute, "_InvGamma", new Vector4(invgamma.x, invgamma.y, invgamma.z, 0f));
-                cmd.SetComputeVectorParam(compute, "_Gain", new Vector4(gain.x, gain.y, gain.z, 0f));
-
-                cmd.SetComputeTextureParam(compute, kernel, "_Curves", GetCurveTexture(true));
-
-                if (settings.tonemapper.value == Tonemapper.Custom)
-                {
-                    m_HableCurve.Init(
-                        settings.toneCurveToeStrength.value,
-                        settings.toneCurveToeLength.value,
-                        settings.toneCurveShoulderStrength.value,
-                        settings.toneCurveShoulderLength.value,
-                        settings.toneCurveShoulderAngle.value,
-                        settings.toneCurveGamma.value
-                    );
-
-                    cmd.SetComputeVectorParam(compute, "_CustomToneCurve", m_HableCurve.uniforms.curve);
-                    cmd.SetComputeVectorParam(compute, "_ToeSegmentA", m_HableCurve.uniforms.toeSegmentA);
-                    cmd.SetComputeVectorParam(compute, "_ToeSegmentB", m_HableCurve.uniforms.toeSegmentB);
-                    cmd.SetComputeVectorParam(compute, "_MidSegmentA", m_HableCurve.uniforms.midSegmentA);
-                    cmd.SetComputeVectorParam(compute, "_MidSegmentB", m_HableCurve.uniforms.midSegmentB);
-                    cmd.SetComputeVectorParam(compute, "_ShoSegmentA", m_HableCurve.uniforms.shoSegmentA);
-                    cmd.SetComputeVectorParam(compute, "_ShoSegmentB", m_HableCurve.uniforms.shoSegmentB);
-                }
-
-                // Generate the lut
-                context.command.BeginSample("HdrColorGradingLut3D");
-                int groupSize = Mathf.CeilToInt(k_Lut3DSize / 4f);
-                cmd.DispatchCompute(compute, kernel, groupSize, groupSize, groupSize);
-                context.command.EndSample("HdrColorGradingLut3D");
-            }
+            Update3DLUT(context.resources.computeShaders.lut3DBaker);
 
             var lut = m_InternalLogLut;
             var uberSheet = context.uberSheet;
@@ -534,6 +461,82 @@ namespace UnityEngine.Rendering.PostProcessing
             uberSheet.properties.SetFloat(ShaderIDs.PostExposure, RuntimeUtilities.Exp2(settings.postExposure.value));
 
             context.logLut = lut;
+        }
+
+        public void Update3DLUT(ComputeShader compute)
+        {
+            CheckInternalLogLut();
+
+            // Lut setup
+            int kernel = 0;
+
+            switch (settings.tonemapper.value)
+            {
+                case Tonemapper.None:
+                    kernel = compute.FindKernel("KGenLut3D_NoTonemap");
+                    break;
+                case Tonemapper.Neutral:
+                    kernel = compute.FindKernel("KGenLut3D_NeutralTonemap");
+                    break;
+                case Tonemapper.ACES:
+                    kernel = compute.FindKernel("KGenLut3D_AcesTonemap");
+                    break;
+                case Tonemapper.Custom:
+                    kernel = compute.FindKernel("KGenLut3D_CustomTonemap");
+                    break;
+            }
+
+            compute.SetTexture(kernel, "_Output", m_InternalLogLut);
+            compute.SetVector("_Size", new Vector4(k_Lut3DSize, 1f / (k_Lut3DSize - 1f), 0f, 0f));
+
+            var colorBalance = ColorUtilities.ComputeColorBalance(settings.temperature.value, settings.tint.value);
+            compute.SetVector("_ColorBalance", colorBalance);
+            compute.SetVector("_ColorFilter", settings.colorFilter.value);
+
+            float hue = settings.hueShift.value / 360f;         // Remap to [-0.5;0.5]
+            float sat = settings.saturation.value / 100f + 1f;  // Remap to [0;2]
+            float con = settings.contrast.value / 100f + 1f;    // Remap to [0;2]
+            compute.SetVector("_HueSatCon", new Vector4(hue, sat, con, 0f));
+
+            var channelMixerR = new Vector4(settings.mixerRedOutRedIn, settings.mixerRedOutGreenIn, settings.mixerRedOutBlueIn, 0f);
+            var channelMixerG = new Vector4(settings.mixerGreenOutRedIn, settings.mixerGreenOutGreenIn, settings.mixerGreenOutBlueIn, 0f);
+            var channelMixerB = new Vector4(settings.mixerBlueOutRedIn, settings.mixerBlueOutGreenIn, settings.mixerBlueOutBlueIn, 0f);
+            compute.SetVector("_ChannelMixerRed", channelMixerR / 100f); // Remap to [-2;2]
+            compute.SetVector("_ChannelMixerGreen", channelMixerG / 100f);
+            compute.SetVector("_ChannelMixerBlue", channelMixerB / 100f);
+
+            var lift = ColorUtilities.ColorToLift(settings.lift.value * 0.2f);
+            var gain = ColorUtilities.ColorToGain(settings.gain.value * 0.8f);
+            var invgamma = ColorUtilities.ColorToInverseGamma(settings.gamma.value * 0.8f);
+            compute.SetVector("_Lift", new Vector4(lift.x, lift.y, lift.z, 0f));
+            compute.SetVector("_InvGamma", new Vector4(invgamma.x, invgamma.y, invgamma.z, 0f));
+            compute.SetVector("_Gain", new Vector4(gain.x, gain.y, gain.z, 0f));
+
+            compute.SetTexture(kernel, "_Curves", GetCurveTexture(true));
+
+            if (settings.tonemapper.value == Tonemapper.Custom)
+            {
+                m_HableCurve.Init(
+                    settings.toneCurveToeStrength.value,
+                    settings.toneCurveToeLength.value,
+                    settings.toneCurveShoulderStrength.value,
+                    settings.toneCurveShoulderLength.value,
+                    settings.toneCurveShoulderAngle.value,
+                    settings.toneCurveGamma.value
+                );
+
+                compute.SetVector("_CustomToneCurve", m_HableCurve.uniforms.curve);
+                compute.SetVector("_ToeSegmentA", m_HableCurve.uniforms.toeSegmentA);
+                compute.SetVector("_ToeSegmentB", m_HableCurve.uniforms.toeSegmentB);
+                compute.SetVector("_MidSegmentA", m_HableCurve.uniforms.midSegmentA);
+                compute.SetVector("_MidSegmentB", m_HableCurve.uniforms.midSegmentB);
+                compute.SetVector("_ShoSegmentA", m_HableCurve.uniforms.shoSegmentA);
+                compute.SetVector("_ShoSegmentB", m_HableCurve.uniforms.shoSegmentB);
+            }
+
+            // Generate the lut
+            int groupSize = Mathf.CeilToInt(k_Lut3DSize / 4f);
+            compute.Dispatch(kernel, groupSize, groupSize, groupSize);
         }
 
         // HDR color pipeline is rendered to a 2D strip lut (works on HDR platforms without compute

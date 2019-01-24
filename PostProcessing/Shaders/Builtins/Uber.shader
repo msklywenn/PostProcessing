@@ -7,9 +7,11 @@ Shader "Hidden/PostProcessing/Uber"
         #pragma multi_compile __ DISTORT
         #pragma multi_compile __ CHROMATIC_ABERRATION CHROMATIC_ABERRATION_LOW
         #pragma multi_compile __ BLOOM BLOOM_LOW
+        #pragma multi_compile __ BLOOM_DIRT
         #pragma multi_compile __ VIGNETTE
         #pragma multi_compile __ GRAIN
         #pragma multi_compile __ FINALPASS
+        #pragma multi_compile __ AUTO_EXPOSURE
         // the following keywords are handled in API specific SubShaders below
         // #pragma multi_compile __ COLOR_GRADING_LDR_2D COLOR_GRADING_HDR_2D COLOR_GRADING_HDR_3D
         // #pragma multi_compile __ STEREO_INSTANCING_ENABLED STEREO_DOUBLEWIDE_TARGET
@@ -83,7 +85,10 @@ Shader "Hidden/PostProcessing/Uber"
             float2 uvStereoDistorted = Distort(i.texcoordStereo);
             //<<<
 
-            //half autoExposure = SAMPLE_TEXTURE2D(_AutoExposureTex, sampler_AutoExposureTex, uv).r;
+            #if AUTO_EXPOSURE
+            half autoExposure = SAMPLE_TEXTURE2D(_AutoExposureTex, sampler_AutoExposureTex, uv).r;
+            #endif
+
             half4 color = (0.0).xxxx;
 
             // Inspired by the method described in "Rendering Inside" [Playdead 2016]
@@ -143,7 +148,9 @@ Shader "Hidden/PostProcessing/Uber"
             }
             #endif
 
-            //color.rgb *= autoExposure;
+            #if AUTO_EXPOSURE
+            color.rgb *= autoExposure;
+            #endif
 
             #if BLOOM || BLOOM_LOW
             {
@@ -153,17 +160,22 @@ Shader "Hidden/PostProcessing/Uber"
                 half4 bloom = UpsampleBox(TEXTURE2D_PARAM(_BloomTex, sampler_BloomTex), uvDistorted, _BloomTex_TexelSize.xy, _Bloom_Settings.x);
                 #endif
 
-                // UVs should be Distort(uv * _Bloom_DirtTileOffset.xy + _Bloom_DirtTileOffset.zw)
-                // but considering we use a cover-style scale on the dirt texture the difference
-                // isn't massive so we chose to save a few ALUs here instead in case lens distortion
-                // is active
-                half4 dirt = half4(SAMPLE_TEXTURE2D(_Bloom_DirtTex, sampler_Bloom_DirtTex, uvDistorted * _Bloom_DirtTileOffset.xy + _Bloom_DirtTileOffset.zw).rgb, 0.0);
 
                 // Additive bloom (artist friendly)
                 bloom *= _Bloom_Settings.y;
-                dirt *= _Bloom_Settings.z;
                 color += bloom * half4(_Bloom_Color, 1.0);
-                color += dirt * bloom;
+
+                #if BLOOM_DIRT
+                {
+                    // UVs should be Distort(uv * _Bloom_DirtTileOffset.xy + _Bloom_DirtTileOffset.zw)
+                    // but considering we use a cover-style scale on the dirt texture the difference
+                    // isn't massive so we chose to save a few ALUs here instead in case lens distortion
+                    // is active
+                    half4 dirt = half4(SAMPLE_TEXTURE2D(_Bloom_DirtTex, sampler_Bloom_DirtTex, uvDistorted * _Bloom_DirtTileOffset.xy + _Bloom_DirtTileOffset.zw).rgb, 0.0);
+                    dirt *= _Bloom_Settings.z;
+                    color += dirt * bloom;
+                }
+                #endif
             }
             #endif
 
@@ -245,14 +257,14 @@ Shader "Hidden/PostProcessing/Uber"
             }
             #else
             {
-                UNITY_BRANCH
-                if (_LumaInAlpha > 0.5)
+                #if LUMA_IN_ALPHA
                 {
                     // Put saturated luma in alpha for FXAA - higher quality than "green as luma" and
                     // necessary as RGB values will potentially still be HDR for the FXAA pass
                     half luma = Luminance(saturate(output));
                     output.a = luma;
                 }
+                #endif
 
                 #if UNITY_COLORSPACE_GAMMA
                 {
