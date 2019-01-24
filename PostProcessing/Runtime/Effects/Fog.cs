@@ -74,16 +74,16 @@ namespace UnityEngine.Rendering.PostProcessing
                 var fogColor = skybox.GetColor(ShaderIDs.Tint).linear;
                 float exposure = skybox.GetFloat(ShaderIDs.Exposure);
                 float rotation = Mathf.Deg2Rad * skybox.GetFloat(ShaderIDs.Rotation);
-                sheet.properties.SetVector(ShaderIDs.FogColor, new Vector4(fogColor.r, fogColor.g, fogColor.b, exposure));
-                sheet.properties.SetVector(ShaderIDs.FogParams, new Vector4(RenderSettings.fogDensity,
+                sheet.material.SetVector(ShaderIDs.FogColor, new Vector4(fogColor.r, fogColor.g, fogColor.b, exposure));
+                sheet.material.SetVector(ShaderIDs.FogParams, new Vector4(RenderSettings.fogDensity,
                     RenderSettings.fogStartDistance, RenderSettings.fogEndDistance, -rotation));
-                sheet.properties.SetTexture(ShaderIDs.SkyCubemap, cubemap);
+                sheet.material.SetTexture(ShaderIDs.SkyCubemap, cubemap);
             }
             else
             {
                 var fogColor = RuntimeUtilities.isLinearColorSpace ? RenderSettings.fogColor.linear : RenderSettings.fogColor;
-                sheet.properties.SetVector(ShaderIDs.FogColor, fogColor);
-                sheet.properties.SetVector(ShaderIDs.FogParams, new Vector3(RenderSettings.fogDensity, RenderSettings.fogStartDistance, RenderSettings.fogEndDistance));
+                sheet.material.SetVector(ShaderIDs.FogColor, fogColor);
+                sheet.material.SetVector(ShaderIDs.FogParams, new Vector3(RenderSettings.fogDensity, RenderSettings.fogStartDistance, RenderSettings.fogEndDistance));
             }
         }
 
