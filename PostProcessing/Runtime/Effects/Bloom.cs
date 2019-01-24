@@ -138,9 +138,12 @@ namespace UnityEngine.Rendering.PostProcessing
             cmd.BeginSample("BloomPyramid");
 
             var sheet = context.propertySheets.Get(context.resources.shaders.bloom);
+            sheet.ClearKeywords();
 
             // Apply auto exposure adjustment in the prefiltering pass
             sheet.properties.SetTexture(ShaderIDs.AutoExposureTex, context.autoExposureTexture);
+            if (context.autoExposure != null && context.autoExposure.IsEnabledAndSupported(context))
+                sheet.EnableKeyword("AUTO_EXPOSURE");
 
             // Negative anamorphic ratio values distort vertically - positive is horizontal
             float ratio = Mathf.Clamp(settings.anamorphicRatio, -1, 1);
@@ -249,8 +252,6 @@ namespace UnityEngine.Rendering.PostProcessing
                 uberSheet.EnableKeyword("BLOOM");
             if (settings.dirtIntensity > 0f)
                 uberSheet.EnableKeyword("BLOOM_DIRT");
-            if (context.autoExposure != null && context.autoExposure.IsEnabledAndSupported(context))
-                uberSheet.EnableKeyword("AUTO_EXPOSURE");
             uberSheet.properties.SetVector(ShaderIDs.Bloom_DirtTileOffset, dirtTileOffset);
             uberSheet.properties.SetVector(ShaderIDs.Bloom_Settings, shaderSettings);
             uberSheet.properties.SetColor(ShaderIDs.Bloom_Color, linearColor);

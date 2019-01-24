@@ -1,6 +1,8 @@
 Shader "Hidden/PostProcessing/Bloom"
 {
     HLSLINCLUDE
+
+#pragma multi_compile __ AUTO_EXPOSURE
         
         #include "../StdLib.hlsl"
         #include "../Colors.hlsl"
@@ -21,8 +23,10 @@ Shader "Hidden/PostProcessing/Bloom"
 
         half4 Prefilter(half4 color, float2 uv)
         {
-            //half autoExposure = SAMPLE_TEXTURE2D(_AutoExposureTex, sampler_AutoExposureTex, uv).r;
-            //color *= autoExposure;
+#if AUTO_EXPOSURE
+            half autoExposure = SAMPLE_TEXTURE2D(_AutoExposureTex, sampler_AutoExposureTex, uv).r;
+            color *= autoExposure;
+#endif
             color = min(_Params.x, color); // clamp to max
             color = QuadraticThreshold(color, _Threshold.x, _Threshold.yzw);
             return color;
