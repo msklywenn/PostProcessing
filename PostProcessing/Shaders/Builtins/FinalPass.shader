@@ -41,6 +41,10 @@ Shader "Hidden/PostProcessing/FinalPass"
         TEXTURE2D_SAMPLER2D(_MainTex, sampler_MainTex);
         float4 _MainTex_TexelSize;
 
+        float4 _FXAAConsoleCorner;
+        float4 _FXAAConsoleRcpFrameOpt;
+        float4 _FXAAConsoleRcpFrameOpt2;
+
         float4 Frag(VaryingsDefault i) : SV_Target
         {
             half4 color = 0.0;
@@ -56,23 +60,24 @@ Shader "Hidden/PostProcessing/FinalPass"
                     FxaaTex mainTex = _MainTex;
                 #endif
 
+                float4 pospos = i.texcoord.xyxy + _FXAAConsoleCorner;
                 color = FxaaPixelShader(
-                    i.texcoord,                 // pos
-                    0.0,                        // fxaaConsolePosPos (unused)
-                    mainTex,                    // tex
-                    mainTex,                    // fxaaConsole360TexExpBiasNegOne (unused)
-                    mainTex,                    // fxaaConsole360TexExpBiasNegTwo (unused)
-                    _MainTex_TexelSize.xy,      // fxaaQualityRcpFrame
-                    0.0,                        // fxaaConsoleRcpFrameOpt (unused)
-                    0.0,                        // fxaaConsoleRcpFrameOpt2 (unused)
-                    0.0,                        // fxaaConsole360RcpFrameOpt2 (unused)
+                    i.texcoord,                      // pos
+                    pospos,                          // fxaaConsolePosPos
+                    mainTex,                         // tex
+                    mainTex,                         // fxaaConsole360TexExpBiasNegOne (unused)
+                    mainTex,                         // fxaaConsole360TexExpBiasNegTwo (unused)
+                    _MainTex_TexelSize.xy,           // fxaaQualityRcpFrame
+                    _FXAAConsoleRcpFrameOpt,         // fxaaConsoleRcpFrameOpt
+                    _FXAAConsoleRcpFrameOpt2,        // fxaaConsoleRcpFrameOpt2
+                    0.0,                             // fxaaConsole360RcpFrameOpt2 (unused)
                     FXAA_QUALITY_SUBPIX,
                     FXAA_QUALITY_EDGE_THRESHOLD,
                     FXAA_QUALITY_EDGE_THRESHOLD_MIN,
-                    0.0,                        // fxaaConsoleEdgeSharpness (unused)
-                    0.0,                        // fxaaConsoleEdgeThreshold (unused)
-                    0.0,                        // fxaaConsoleEdgeThresholdMin (unused)
-                    0.0                         // fxaaConsole360ConstDir (unused)
+                    8.0,                             // fxaaConsoleEdgeSharpness (8.0 = default, lower is softer)
+                    0.125,                           // fxaaConsoleEdgeThreshold (0.125 = default, higher is sharper)
+                    0.05,                            // fxaaConsoleEdgeThresholdMin (0.05 = default, > is faster with more aliasing)
+                    0.0                              // fxaaConsole360ConstDir (unused)
                 );
 
                 #if FXAA_KEEP_ALPHA
@@ -89,7 +94,9 @@ Shader "Hidden/PostProcessing/FinalPass"
             }
             #endif
 
+#if !defined(SHADER_API_SWITCH)
             color.rgb = Dither(color.rgb, i.texcoord);
+#endif
             return color;
         }
 

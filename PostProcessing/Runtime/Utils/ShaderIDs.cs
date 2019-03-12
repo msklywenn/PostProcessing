@@ -161,5 +161,9 @@ namespace UnityEngine.Rendering.PostProcessing
         internal static readonly int DepthSlice                      = Shader.PropertyToID("_DepthSlice");
         internal static readonly int UVScaleOffset                   = Shader.PropertyToID("_UVScaleOffset");
         internal static readonly int PosScaleOffset                  = Shader.PropertyToID("_PosScaleOffset");
+        
+        internal static readonly int FXAAConsoleCorner               = Shader.PropertyToID("_FXAAConsoleCorner");
+        internal static readonly int FXAAConsoleRcpFrameOpt          = Shader.PropertyToID("_FXAAConsoleRcpFrameOpt");
+        internal static readonly int FXAAConsoleRcpFrameOpt2         = Shader.PropertyToID("_FXAAConsoleRcpFrameOpt2");
     }
 }

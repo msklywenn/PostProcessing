@@ -1238,13 +1238,23 @@ namespace UnityEngine.Rendering.PostProcessing
 
                 if (antialiasingMode == Antialiasing.FastApproximateAntialiasing)
                 {
-                    uberSheet.EnableKeyword(fastApproximateAntialiasing.fastMode
-                        ? "FXAA_LOW"
-                        : "FXAA"
-                    );
+                    uberSheet.EnableKeyword(fastApproximateAntialiasing.fastMode ? "FXAA_LOW" : "FXAA");
 
                     if (fastApproximateAntialiasing.keepAlpha || !RuntimeUtilities.hasAlphaChannel(context.sourceFormat))
                         uberSheet.EnableKeyword("FXAA_KEEP_ALPHA");
+
+                    Vector4 invTexSize = new Vector4()
+                    {
+                        x = -1f / context.width,
+                        y = -1f / context.height,
+                    };
+                    invTexSize.z = -invTexSize.x;
+                    invTexSize.w = -invTexSize.y;
+
+                    const float subPixQ = 0.5f;
+                    uberSheet.properties.SetVector(ShaderIDs.FXAAConsoleCorner, invTexSize * 0.5f);
+                    uberSheet.properties.SetVector(ShaderIDs.FXAAConsoleRcpFrameOpt, invTexSize * subPixQ);
+                    uberSheet.properties.SetVector(ShaderIDs.FXAAConsoleRcpFrameOpt2, invTexSize * 2f);
                 }
                 else if (antialiasingMode == Antialiasing.SubpixelMorphologicalAntialiasing && subpixelMorphologicalAntialiasing.IsSupported())
                 {
