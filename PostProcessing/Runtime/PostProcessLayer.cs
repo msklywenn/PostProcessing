@@ -5,11 +5,11 @@ using UnityEngine.Assertions;
 
 namespace UnityEngine.Rendering.PostProcessing
 {
-#if UNITY_2017_2_OR_NEWER && ENABLE_VR
-    using XRSettings = UnityEngine.XR.XRSettings;
-#elif UNITY_5_6_OR_NEWER && ENABLE_VR
-    using XRSettings = UnityEngine.VR.VRSettings;
-#endif
+//#if UNITY_2017_2_OR_NEWER && ENABLE_VR
+//    using XRSettings = UnityEngine.XR.XRSettings;
+//#elif UNITY_5_6_OR_NEWER && ENABLE_VR
+//    using XRSettings = UnityEngine.VR.VRSettings;
+//#endif
 
     /// <summary>
     /// This is the component responsible for rendering post-processing effects. It must be put on

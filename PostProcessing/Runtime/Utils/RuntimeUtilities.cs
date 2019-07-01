@@ -802,10 +802,10 @@ namespace UnityEngine.Rendering.PostProcessing
                 return UnityEditor.PlayerSettings.virtualRealitySupported;
 #elif UNITY_XBOXONE || UNITY_SWITCH || !ENABLE_VR
                 return false;
-#elif UNITY_2017_2_OR_NEWER
-                return UnityEngine.XR.XRSettings.enabled;
-#elif UNITY_5_6_OR_NEWER
-                return UnityEngine.VR.VRSettings.enabled;
+//#elif UNITY_2017_2_OR_NEWER
+//                return UnityEngine.XR.XRSettings.enabled;
+//#elif UNITY_5_6_OR_NEWER
+//                return UnityEngine.VR.VRSettings.enabled;
 #else
                 return false;
 #endif
