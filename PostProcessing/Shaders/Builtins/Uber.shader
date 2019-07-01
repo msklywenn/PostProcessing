@@ -12,6 +12,7 @@ Shader "Hidden/PostProcessing/Uber"
         #pragma multi_compile __ GRAIN
         #pragma multi_compile __ FINALPASS
         #pragma multi_compile __ AUTO_EXPOSURE
+        #pragma multi_compile __ LUMA_IN_ALPHA
         // the following keywords are handled in API specific SubShaders below
         // #pragma multi_compile __ COLOR_GRADING_LDR_2D COLOR_GRADING_HDR_2D COLOR_GRADING_HDR_3D
         // #pragma multi_compile __ STEREO_INSTANCING_ENABLED STEREO_DOUBLEWIDE_TARGET

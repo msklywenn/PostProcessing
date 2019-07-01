@@ -248,7 +248,6 @@ namespace UnityEngine.Rendering.PostProcessing
 
             // Shader properties
             var uberSheet = context.uberSheet;
-            uberSheet.ClearKeywords();
             if (settings.fastMode)
                 uberSheet.EnableKeyword("BLOOM_LOW");
             else

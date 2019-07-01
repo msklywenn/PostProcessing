@@ -1177,7 +1177,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
                 // Handle FXAA's keep alpha mode
                 if (antialiasingMode == Antialiasing.FastApproximateAntialiasing
-                        && !fastApproximateAntialiasing.keepAlpha || !RuntimeUtilities.hasAlphaChannel(context.sourceFormat))
+                        && (!fastApproximateAntialiasing.keepAlpha || !RuntimeUtilities.hasAlphaChannel(context.sourceFormat)))
                     uberSheet.EnableKeyword("LUMA_IN_ALPHA");
             }
 
