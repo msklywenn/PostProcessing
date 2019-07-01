@@ -2,11 +2,11 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Rendering.PostProcessing
 {
-//#if UNITY_2017_2_OR_NEWER
-//    using XRSettings = UnityEngine.XR.XRSettings;
-//#elif UNITY_5_6_OR_NEWER
-//    using XRSettings = UnityEngine.VR.VRSettings;
-//#endif
+#if UNITY_2017_2_OR_NEWER && ENABLE_VR
+    using XRSettings = UnityEngine.XR.XRSettings;
+#elif UNITY_5_6_OR_NEWER && ENABLE_VR
+    using XRSettings = UnityEngine.VR.VRSettings;
+#endif
 
     /// <summary>
     /// A context object passed around all post-processing effects in a frame.
@@ -346,7 +346,16 @@ namespace UnityEngine.Rendering.PostProcessing
             if (colorFormat != RenderTextureFormat.Default)
                 modifiedDesc.colorFormat = colorFormat;
 
+#if UNITY_2019_1_OR_NEWER
+            if (readWrite == RenderTextureReadWrite.sRGB)
+                modifiedDesc.sRGB = true;
+            else if (readWrite == RenderTextureReadWrite.Linear)
+                modifiedDesc.sRGB = false;
+            else if (readWrite == RenderTextureReadWrite.Default)
+                modifiedDesc.sRGB = QualitySettings.activeColorSpace != ColorSpace.Gamma;
+#else
             modifiedDesc.sRGB = readWrite != RenderTextureReadWrite.Linear;
+#endif
 
             return modifiedDesc;
         }
