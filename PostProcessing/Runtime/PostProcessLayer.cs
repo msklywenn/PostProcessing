@@ -427,14 +427,14 @@ namespace UnityEngine.Rendering.PostProcessing
                 m_Camera.ResetProjectionMatrix();
             m_Camera.nonJitteredProjectionMatrix = m_Camera.projectionMatrix;
 
-#if ENABLE_VR
-            if (m_Camera.stereoEnabled)
-            {
-                m_Camera.ResetStereoProjectionMatrices();
-                Shader.SetGlobalFloat(ShaderIDs.RenderViewportScaleFactor, XRSettings.renderViewportScale);
-            }
-            else
-#endif
+//#if ENABLE_VR
+//            if (m_Camera.stereoEnabled)
+//            {
+//                m_Camera.ResetStereoProjectionMatrices();
+//                Shader.SetGlobalFloat(ShaderIDs.RenderViewportScaleFactor, XRSettings.renderViewportScale);
+//            }
+//            else
+//#endif
             {
                 Shader.SetGlobalFloat(ShaderIDs.RenderViewportScaleFactor, 1.0f);
             }
