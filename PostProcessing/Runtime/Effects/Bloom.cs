@@ -155,8 +155,14 @@ namespace UnityEngine.Rendering.PostProcessing
 
             // Do bloom on a half-res buffer, full-res doesn't bring much and kills performances on
             // fillrate limited platforms
+            // quarter resolution on switch
+#if UNITY_SWITCH
+            int tw = Mathf.FloorToInt(context.screenWidth / (4f - rw));
+            int th = Mathf.FloorToInt(context.screenHeight / (4f - rh));
+#else
             int tw = Mathf.FloorToInt(context.screenWidth / (2f - rw));
             int th = Mathf.FloorToInt(context.screenHeight / (2f - rh));
+#endif
             bool singlePassDoubleWide = (context.stereoActive && (context.stereoRenderingMode == PostProcessRenderContext.StereoRenderingMode.SinglePass) && (context.camera.stereoTargetEye == StereoTargetEyeMask.Both));
             int tw_stereo = singlePassDoubleWide ? tw * 2 : tw; 
 
