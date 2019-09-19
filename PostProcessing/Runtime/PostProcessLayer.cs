@@ -563,7 +563,6 @@ namespace UnityEngine.Rendering.PostProcessing
             bool hasCustomOpaqueOnlyEffects = HasOpaqueOnlyEffects(context);
             int opaqueOnlyEffects = 0;
             opaqueOnlyEffects += isScreenSpaceReflectionsActive ? 1 : 0;
-            opaqueOnlyEffects += isFogActive ? 1 : 0;
             opaqueOnlyEffects += hasCustomOpaqueOnlyEffects ? 1 : 0;
 
             bool requiresBlit = RequiresInitialBlit(m_Camera, context) || opaqueOnlyEffects == 1;
@@ -571,6 +570,10 @@ namespace UnityEngine.Rendering.PostProcessing
 
             // This works on right eye because it is resolved/populated at runtime
             var cameraTarget = new RenderTargetIdentifier(BuiltinRenderTextureType.CameraTarget);
+
+            context.source = cameraTarget;
+            context.destination = cameraTarget;
+            fog.Render(context);
 
             Profiling.Profiler.BeginSample("OpaqueOnly");
             if (opaqueOnlyEffects > 0)
@@ -598,18 +601,11 @@ namespace UnityEngine.Rendering.PostProcessing
                     UpdateSrcDstForOpaqueOnly(ref srcTarget, ref dstTarget, context, cameraTarget, opaqueOnlyEffects);
                 }
 
-                if (isFogActive)
-                {
-                    fog.Render(context);
-                    opaqueOnlyEffects--;
-                    UpdateSrcDstForOpaqueOnly(ref srcTarget, ref dstTarget, context, cameraTarget, opaqueOnlyEffects);
-                }
-
                 if (hasCustomOpaqueOnlyEffects)
                     RenderOpaqueOnly(context);
             }
             Profiling.Profiler.EndSample();
-            
+
             // Post-transparency stack
             int tempRt = -1;
             bool forceNanKillPass = (!m_NaNKilled && stopNaNPropagation && RuntimeUtilities.isFloatingPointFormat(sourceFormat));
