@@ -10,6 +10,11 @@ Shader "Hidden/PostProcessing/DeferredFog"
 
         #define SKYBOX_THRESHOLD_VALUE 0.9999
 
+        #define UNITY_MATRIX_P glstate_matrix_projection
+        CBUFFER_START(UnityPerFrame)
+            float4x4 glstate_matrix_projection;
+        CBUFFER_END
+
         struct AttributesFog
         {
             float4 vertex : POSITION;
@@ -27,19 +32,28 @@ Shader "Hidden/PostProcessing/DeferredFog"
         {
             VaryingsFogFade o;
 
+            float near = _ProjectionParams.y;
+            float far = _ProjectionParams.z;
+
             AttributesDefault defAttribs;
             defAttribs.vertex = v.vertex;
             o.deffault = VertDefault(defAttribs);
 
-            float tanHalfFovX = 1 / unity_CameraProjection[0][0];
-            float tanHalfFovY = 1 / unity_CameraProjection[1][1];
-            float near = _ProjectionParams.y;
+            // extra FOG_START to compensate for hack in fragment shader...
+            // multiplication by 0.999 fixes precision issue on switch
+#if FOG_LINEAR
+            float fogStart = -clamp(FOG_START * 2, near, far * 0.999);
+#else
+            float fogStart = -clamp(FOG_START, near, far * 0.999);
+#endif
+            float4 p = mul(UNITY_MATRIX_P, float4(0, 0, fogStart, 1));
+            o.deffault.vertex.z = p.z / p.w;
+
+            float tanHalfFovX = 1 / UNITY_MATRIX_P[0][0];
+            float tanHalfFovY = 1 / UNITY_MATRIX_P[1][1];
             float3 right = unity_WorldToCamera[0].xyz * near * tanHalfFovX;
             float3 top = unity_WorldToCamera[1].xyz * near * tanHalfFovY;
             float2 corner = v.vertex.xy;
-#if UNITY_UV_STARTS_AT_TOP
-            corner.y = -corner.y;
-#endif
             float3 origin = unity_WorldToCamera[2].xyz * near;
             o.ray = origin + corner.x * right + corner.y * top;
 
@@ -73,14 +87,14 @@ Shader "Hidden/PostProcessing/DeferredFog"
         float4 FragFadeToSkybox(VaryingsFogFade i) : SV_Target
         {
             float depth = SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, i.deffault.texcoordStereo);
-            depth = Linear01Depth(depth);
-            float dist = ComputeFogDistance(depth) - FOG_START;
+            //depth = Linear01Depth(depth);
+            depth = 1.0 / (_ZBufferParams.x * depth + _ZBufferParams.y);
+
+            float dist = ComputeFogDistance(depth) - FOG_START; // -FOG_START hack! to push away exponential fog
             half fog = 1.0 - ComputeFog(dist);
             float skybox = depth > SKYBOX_THRESHOLD_VALUE;
 
             float blend = saturate(fog + skybox);
-            if (blend <= 0.05)
-                discard;
 
             // Look up the skybox color.
             half3 skyColor = texCUBE(_SkyCubemap, i.ray);
@@ -94,13 +108,13 @@ Shader "Hidden/PostProcessing/DeferredFog"
 
     SubShader
     {
-        Cull Off ZWrite Off ZTest Always
+        Cull Off
+        ZWrite Off
+        Blend SrcAlpha OneMinusSrcAlpha
 
         Pass
         {
-            ZWrite Off
             ZTest Always
-            Blend SrcAlpha OneMinusSrcAlpha
             HLSLPROGRAM
                 #pragma vertex VertDefault
                 #pragma fragment Frag
@@ -109,9 +123,7 @@ Shader "Hidden/PostProcessing/DeferredFog"
 
         Pass
         {
-            ZWrite Off
             ZTest Always
-            Blend SrcAlpha OneMinusSrcAlpha
             HLSLPROGRAM
                 #pragma vertex VertDefault
                 #pragma fragment FragExcludeSkybox
@@ -120,9 +132,7 @@ Shader "Hidden/PostProcessing/DeferredFog"
 
         Pass
         {
-            ZWrite Off
-            ZTest Always
-            Blend SrcAlpha OneMinusSrcAlpha
+            ZTest Less
             HLSLPROGRAM
                 #pragma vertex VertFogFade
                 #pragma fragment FragFadeToSkybox
