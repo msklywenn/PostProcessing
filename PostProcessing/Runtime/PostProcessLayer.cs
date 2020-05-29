@@ -1233,7 +1233,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 {
                     tempTarget = m_TargetPool.Get();
                     context.GetScreenSpaceTemporaryRT(cmd, tempTarget, 0, context.sourceFormat);
-                    cmd.CopyTexture(context.source, tempTarget);
+                    cmd.BlitFullscreenTriangle(context.source, tempTarget);
                     context.source = tempTarget;
                 }
 
