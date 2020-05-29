@@ -1228,7 +1228,23 @@ namespace UnityEngine.Rendering.PostProcessing
                 cmd.BlitFullscreenTriangle(context.source, context.destination, uberSheet, 0, false);
 #endif
             else
+            {
+                if (isFinalPass)
+                {
+                    tempTarget = m_TargetPool.Get();
+                    context.GetScreenSpaceTemporaryRT(cmd, tempTarget, 0, context.sourceFormat);
+                    cmd.CopyTexture(context.source, tempTarget);
+                    context.source = tempTarget;
+                }
+
                 cmd.BlitFullscreenTriangle(context.source, context.destination, uberSheet, 0);
+
+                if (isFinalPass)
+                {
+                    cmd.ReleaseTemporaryRT(tempTarget);
+                    tempTarget = -1;
+                }
+            }
 
             context.source = context.destination;
             context.destination = finalDestination;
